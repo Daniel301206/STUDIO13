@@ -174,13 +174,13 @@ const Inicio = () => {
     <Layout>
       <div className="bg-white">
         {/* ── HERO ── */}
-        <section className="relative h-svh min-h-[47rem] overflow-hidden bg-[#0c0b0b] sm:min-h-150">
+        <section className="relative h-svh min-h-188 overflow-hidden bg-[#434343] sm:min-h-150">
           <img
             src={imagenInicio01}
             alt="Fotógrafo de Studio13 con su cámara"
-            className="absolute right-0 bottom-0 z-0 h-auto w-[62vw] max-w-[18rem] object-contain object-bottom sm:inset-y-0 sm:h-full sm:w-auto sm:max-w-[75%] sm:object-right-bottom"
+            className="absolute right-0 bottom-0 z-0 h-auto w-[62vw] max-w-[18rem] object-contain object-bottom sm:inset-y-0 sm:h-full sm:w-auto sm:max-w-[75%] sm:object-bottom-right"
           />
-          <div className="absolute inset-0 z-[1] bg-linear-to-r from-black via-black/85 via-40% to-transparent to-80%" aria-hidden="true" />
+          <div className="absolute inset-0 z-1 bg-linear-to-r from-black via-black/85 via-40% to-transparent to-80%" aria-hidden="true" />
 
           <div className="absolute bottom-12 left-5 z-10 w-[58%] max-w-140 sm:bottom-16 sm:left-12 sm:w-auto">
             <p className="mb-3 font-['Inter'] text-[0.52rem] font-normal tracking-[0.2em] text-white/70 uppercase sm:mb-[1.1rem] sm:text-[0.62rem] sm:tracking-[0.32em]">

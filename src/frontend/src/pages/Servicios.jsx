@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
+import imagenServicio from "../assets/imagen_alquiler.jpg";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
 const normalizarNombre = (value) => value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
@@ -210,7 +211,7 @@ export default function Servicios() {
         {/* ── STUDIO RENTAL ── */}
         <section className="relative h-[clamp(400px,55vw,650px)] overflow-hidden bg-[#1a1818]">
           <img
-            src="https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?w=1800&h=900&fit=crop&auto=format&q=85"
+            src={imagenServicio}
             alt="Estudio fotográfico profesional Studio13"
             className="absolute inset-0 w-full h-full object-cover opacity-[0.55]"
           />

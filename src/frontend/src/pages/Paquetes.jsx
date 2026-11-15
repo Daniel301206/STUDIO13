@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
+import imagenServicio from "../assets/imagen_alquiler.jpg";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
 const formatDate = (value) => new Intl.DateTimeFormat("es-PE", {
@@ -302,7 +303,7 @@ export default function Paquetes() {
             {/* STUDIO PHOTO */}
             <div className="relative h-105 overflow-hidden bg-[#dedad4] mb-12">
               <img
-                src="https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?w=1600&h=700&fit=crop&auto=format&q=85"
+                src={imagenServicio}
                 alt="Estudio Studio13"
                 className="w-full h-full object-cover block opacity-[0.85]"
               />

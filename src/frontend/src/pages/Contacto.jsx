@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
 
@@ -10,6 +11,202 @@ const categoriasReserva = [
   { id: "MEMBRESIAS", nombre: "Membresías", endpoint: "/api/planes-membresia" },
 ];
 const formularioVacio = { nombre: "", email: "", telefono: "", paquete: "", paqueteId: "", mensaje: "" };
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const formatoMoneda = new Intl.NumberFormat("es-PE", {
+  style: "currency",
+  currency: "PEN",
+  minimumFractionDigits: 2,
+});
+const formatearMoneda = (valor) => {
+  if (valor === null || valor === undefined || valor === "") return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? formatoMoneda.format(numero) : null;
+};
+const numeroOpcional = (valor) => {
+  if (valor === null || valor === undefined || valor === "") return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
+};
+// No hay pasarela de pago configurada en el proyecto. Se mantiene desactivado
+// hasta que exista un flujo real verificado por el backend.
+const pagoEnLineaDisponible = false;
+
+function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, saldo, onClose }) {
+  const dialogRef = useRef(null);
+  const closeRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const [aviso, setAviso] = useState("");
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") onCloseRef.current();
+      if (event.key !== "Tab") return;
+      const items = dialogRef.current?.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href]',
+      );
+      if (!items?.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus?.();
+    };
+  }, []);
+
+  const continuar = () => {
+    if (!pagoEnLineaDisponible) {
+      setAviso("El pago en línea aún no está disponible. No se realizó ningún cargo ni se envió la solicitud. Cancela y usa «Enviar solicitud» para reservar sin pagar.");
+      return;
+    }
+  };
+
+  const precioFormateado = formatearMoneda(precio);
+  const adelantoFormateado = formatearMoneda(adelanto);
+  const saldoFormateado = formatearMoneda(saldo);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/65 p-3 sm:p-6"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pago-adelantado-titulo"
+        className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto border border-[rgba(26,24,24,0.18)] bg-[#f8f7f4] p-5 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-8"
+      >
+        <header className="mb-6 flex items-start justify-between gap-4 border-b border-[rgba(26,24,24,0.12)] pb-4">
+          <div>
+            <p className="t-label mb-2 text-[#a51c1c]!">Reserva</p>
+            <h2 id="pago-adelantado-titulo" className="m-0 font-[Fraunces,Georgia,serif] text-2xl font-extralight italic text-[#1a1818] sm:text-3xl">
+              Pago por adelantado
+            </h2>
+            <p className="t-body mb-0 mt-2 text-[0.8rem]!">Revisa los datos antes de continuar.</p>
+          </div>
+          <button
+            ref={closeRef}
+            type="button"
+            aria-label="Cerrar pago por adelantado"
+            onClick={onClose}
+            className="border border-[rgba(26,24,24,0.25)] bg-transparent px-3 py-2 text-xl leading-none text-[#1a1818] transition-colors hover:border-[#a51c1c] hover:text-[#a51c1c]"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="grid gap-6">
+          <section aria-labelledby="pago-resumen-titulo">
+            <p id="pago-resumen-titulo" className="t-label mb-3">Resumen del cliente</p>
+            <dl className="grid gap-3 border-y border-[rgba(26,24,24,0.1)] py-4 sm:grid-cols-2">
+              <div>
+                <dt className="t-label mb-1">Cliente</dt>
+                <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{datos.nombre.trim()}</dd>
+                <dd className="m-0 mt-1 break-words font-['Inter'] text-xs text-[#7a7875]">{datos.email.trim()}</dd>
+                <dd className="m-0 mt-0.5 font-['Inter'] text-xs text-[#7a7875]">{datos.telefono.trim()}</dd>
+              </div>
+              <div>
+                <dt className="t-label mb-1">Categoría</dt>
+                <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{categoria?.nombre || "—"}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="t-label mb-1">Paquete</dt>
+                <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{paquete || "—"}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section aria-labelledby="pago-detalle-titulo">
+            <p id="pago-detalle-titulo" className="t-label mb-3">Detalle de pago</p>
+            <dl className="grid gap-3">
+              {precioFormateado && (
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="font-['Inter'] text-sm text-[#5a5856]">Precio del paquete</dt>
+                  <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{precioFormateado}</dd>
+                </div>
+              )}
+              {adelantoFormateado && (
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="font-['Inter'] text-sm text-[#5a5856]">Importe del adelanto</dt>
+                  <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{adelantoFormateado}</dd>
+                </div>
+              )}
+              {saldoFormateado && (
+                <div className="flex items-baseline justify-between gap-4 border-t border-[rgba(26,24,24,0.1)] pt-3">
+                  <dt className="font-['Inter'] text-sm text-[#5a5856]">Saldo pendiente</dt>
+                  <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{saldoFormateado}</dd>
+                </div>
+              )}
+              <div className="flex items-baseline justify-between gap-4">
+                <dt className="font-['Inter'] text-sm text-[#5a5856]">Método de pago</dt>
+                <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">
+                  {pagoEnLineaDisponible ? "Pago en línea" : "Pago en línea (no disponible)"}
+                </dd>
+              </div>
+            </dl>
+            {!precioFormateado && (
+              <p className="t-body mb-0 mt-3 text-[0.75rem]!">El precio de este paquete se confirmará con el estudio.</p>
+            )}
+            {!adelantoFormateado && (
+              <p className="t-body mb-0 mt-1 text-[0.75rem]!">El importe del adelanto y el saldo pendiente se mostrarán cuando el estudio los configure.</p>
+            )}
+          </section>
+
+          {!pagoEnLineaDisponible && (
+            <p id="pago-no-disponible" aria-live="polite" className="m-0 border border-[#dedad4] bg-[#f1efeb] p-4 font-['Inter'] text-sm leading-6 text-[#5a5856]" role="status">
+              <strong className="block text-[#1a1818]">Pago en línea aún no disponible.</strong>
+              No se realizará ningún cargo ni se solicitan datos de tarjeta. Puedes cancelar y enviar tu solicitud sin pagar; el estudio coordinará el adelanto contigo.
+            </p>
+          )}
+
+          {aviso && (
+            <p aria-live="assertive" className="m-0 border border-[#e3b8bb] bg-[#fdf4f4] p-4 font-['Inter'] text-sm leading-6 text-[#a51c1c]" role="alert">
+              {aviso}
+            </p>
+          )}
+        </div>
+
+        <footer className="mt-6 flex flex-col-reverse gap-3 border-t border-[rgba(26,24,24,0.12)] pt-5 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="border border-[rgba(26,24,24,0.25)] bg-transparent px-5 py-3 font-['Inter'] text-[0.7rem] font-semibold tracking-[0.2em] uppercase text-[#1a1818] transition-colors hover:border-[#1a1818]"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={continuar}
+            aria-describedby={pagoEnLineaDisponible ? undefined : "pago-no-disponible"}
+            className="border border-[#1a1818] bg-[#1a1818] px-5 py-3 font-['Inter'] text-[0.7rem] font-semibold tracking-[0.2em] uppercase text-white transition-colors hover:border-[#a51c1c] hover:bg-[#a51c1c]"
+          >
+            Continuar
+          </button>
+        </footer>
+      </section>
+    </div>,
+    document.body,
+  );
+}
 
 export default function Contacto() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,6 +219,9 @@ export default function Contacto() {
   const [sent, setSent] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
+  const [pagoAbierto, setPagoAbierto] = useState(false);
+  const formRef = useRef(null);
+  const enviandoRef = useRef(false);
 
   useEffect(() => {
     if (!categoriaReserva) return undefined;
@@ -57,10 +257,53 @@ export default function Contacto() {
     return () => controller.abort();
   }, [categoriaReserva, paqueteCampaniaId]);
 
+  const opcionSeleccionada = categoriaReserva
+    ? opcionesPaquete.find((opcion) =>
+        categoriaReserva.id === "MEMBRESIAS" ? opcion.nombre === form.paquete : String(opcion.id) === form.paqueteId,
+      )
+    : null;
+  // Campos opcionales que el backend puede incluir cuando exista configuración de pagos.
+  const precioPaquete = numeroOpcional(opcionSeleccionada?.precio);
+  const adelanto = numeroOpcional(opcionSeleccionada?.adelanto);
+  const saldoConfigurado = numeroOpcional(opcionSeleccionada?.saldoPendiente);
+  const saldo = saldoConfigurado ?? (precioPaquete !== null && adelanto !== null ? precioPaquete - adelanto : null);
+
+  const validarReserva = () => {
+    if (!categoriaReserva) return "Selecciona una categoría para reservar.";
+    if (!form.nombre.trim()) return "Escribe tu nombre completo.";
+    if (!emailPattern.test(form.email.trim())) return "Escribe un correo electrónico válido.";
+    if (!form.telefono.trim()) return "Escribe tu teléfono o WhatsApp.";
+    if (!form.paquete) {
+      return categoriaReserva.id === "MEMBRESIAS" ? "Selecciona un plan de membresía." : "Selecciona un paquete.";
+    }
+    if (form.paquete === "Cotización personalizada" && !form.mensaje.trim()) {
+      return "Describe qué necesitas para la cotización personalizada.";
+    }
+    return "";
+  };
+
+  const handlePagar = () => {
+    if (enviandoRef.current) return;
+    if (formRef.current && !formRef.current.reportValidity()) return;
+    const validacion = validarReserva();
+    if (validacion) {
+      setErrorEnvio(validacion);
+      return;
+    }
+    setErrorEnvio("");
+    setPagoAbierto(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (enviando) return;
+    if (enviandoRef.current) return;
+    const validacion = validarReserva();
+    if (validacion) {
+      setErrorEnvio(validacion);
+      return;
+    }
 
+    enviandoRef.current = true;
     setEnviando(true);
     setErrorEnvio("");
     try {
@@ -88,6 +331,7 @@ export default function Contacto() {
         ? "No se pudo contactar con el servidor. Inténtalo nuevamente más tarde."
         : error.message);
     } finally {
+      enviandoRef.current = false;
       setEnviando(false);
     }
   };
@@ -117,8 +361,8 @@ export default function Contacto() {
         </section>
 
         {/* ── MAIN CONTENT ── */}
-        <section className="py-20 px-12 max-w-340 mx-auto">
-          <div className="grid grid-cols-[1fr_1.2fr] gap-20 items-start">
+        <section className="mx-auto max-w-340 px-5 py-12 sm:px-8 lg:px-12 lg:py-20">
+          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-20">
             {/* ── LEFT: info ── */}
             <div>
               <p className="t-label mb-8">Contáctanos</p>
@@ -247,7 +491,7 @@ export default function Contacto() {
                     <button type="button" onClick={() => { setSearchParams({}, { replace: true }); setCategoriaReserva(null); setOpcionesPaquete([]); setErrorOpciones(""); setForm((actual) => ({ ...actual, paquete: "", paqueteId: "", mensaje: "" })); }} className="border-0 bg-transparent p-0 text-xs text-[#8a8880] underline decoration-[#a51c1c] underline-offset-4 hover:text-[#a51c1c]">← Elegir otra categoría</button>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+                  <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-8">
                     <div>
                       <label className="t-label block mb-2">Nombre</label>
 
@@ -345,12 +589,26 @@ export default function Contacto() {
 
                     <div className="pt-2">
                       {errorEnvio && <p className="mb-4 text-sm text-[#a51c1c]" role="alert">{errorEnvio}</p>}
-                      <button type="submit" className="btn-ghost" disabled={enviando || cargandoOpciones || (!opcionesPaquete.length && categoriaReserva.id !== "SESION")}>
-                        {enviando ? "Enviando..." : "Enviar solicitud"}
-                      </button>
+                      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+                        <button
+                          type="submit"
+                          className="btn-ghost disabled:cursor-not-allowed disabled:opacity-45"
+                          disabled={enviando || cargandoOpciones || (!opcionesPaquete.length && categoriaReserva.id !== "SESION")}
+                        >
+                          {enviando ? "Enviando..." : "Enviar solicitud"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handlePagar}
+                          className="inline-flex items-center justify-center border border-[#1a1818] px-4 py-3 font-['Inter'] text-[0.7rem] font-semibold tracking-[0.2em] uppercase text-[#1a1818] transition-colors duration-200 hover:border-[#a51c1c] hover:bg-[#1a1818] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+                          disabled={enviando || cargandoOpciones || (!opcionesPaquete.length && categoriaReserva.id !== "SESION")}
+                        >
+                          Pagar por adelantado
+                        </button>
+                      </div>
 
                       <p className="t-body text-[0.7rem]! mt-4 text-[#aaa8a4]!">
-                        Respondemos en menos de 24 horas.
+                        Respondemos en menos de 24 horas. El pago es opcional.
                       </p>
                     </div>
                   </form>
@@ -396,6 +654,17 @@ export default function Contacto() {
           </div>
         </section>
       </div>
+      {pagoAbierto && (
+        <PagoAdelantadoModal
+          datos={form}
+          categoria={categoriaReserva}
+          paquete={form.paquete}
+          precio={precioPaquete}
+          adelanto={adelanto}
+          saldo={saldo}
+          onClose={() => setPagoAbierto(false)}
+        />
+      )}
     </Layout>
   );
 }
