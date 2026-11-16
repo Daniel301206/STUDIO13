@@ -8,8 +8,18 @@ import env from "./config/env.js";
 const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 3001;
 const allowedOrigins = env.CORS_ORIGINS.length ? env.CORS_ORIGINS : ["http://localhost:3000", "http://localhost:3002"];
+// Permite acceder desde un iPhone u otro dispositivo de la red local durante el
+// desarrollo (por ejemplo http://192.168.1.20:3002) sin abrir CORS a Internet.
+const privateNetworkOrigin = /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\]|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2})(?::\d+)?$/;
+const corsOrigin = (origin, callback) => {
+  if (!origin || allowedOrigins.includes(origin) || privateNetworkOrigin.test(origin)) {
+    return callback(null, true);
+  }
 
-app.use(cors({ origin: allowedOrigins }));
+  return callback(null, false);
+};
+
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use((_req, res, next) => {

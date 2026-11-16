@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { WHATSAPP_ESTUDIO } from "../pages/Layout/Layout.jsx";
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, "");
 const imagenPublicidad = (url) => url?.startsWith("http") ? url : `${API_BASE_URL}${url || ""}`;
 
 export default function AnuncioEmergente({ anuncio, disponible = true, onClose }) {

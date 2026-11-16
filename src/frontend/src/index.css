@@ -150,3 +150,13 @@ blockquote:not([class*="Fraunces"]),
   .hide-sm { display: block !important; }
   .show-sm { display: none !important; }
 }
+
+/* Área segura en iPhone/iPad (modo aplicación instalada). */
+.site13-nav {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-left: env(safe-area-inset-left);
+}
+.site13-main { padding-bottom: env(safe-area-inset-bottom); }
+.site13-main-con-nav { padding-top: calc(3.625rem + env(safe-area-inset-top)); }
+.site13-footer { padding-bottom: env(safe-area-inset-bottom); }

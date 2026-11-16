@@ -10,7 +10,7 @@ import Testimonios from "../Components/Testimonios.jsx";
 import AnuncioEmergente from "../Components/AnuncioEmergente.jsx";
 import CampaniaTemporada from "../Components/CampaniaTemporada.jsx";
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, "");
 const normalizarNombre = (value) => value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
 const mismosDatos = (anterior, siguiente) => JSON.stringify(anterior) === JSON.stringify(siguiente);
 

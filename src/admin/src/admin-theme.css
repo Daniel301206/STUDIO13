@@ -268,3 +268,30 @@
   .pagina-membresias .membership-page-actions button { min-height: 40px; }
   .pagina-membresias .membership-tabs [role="tab"] { min-width: 50%; flex: 1 0 50%; }
 }
+
+/* Área segura en iPhone/iPad (modo aplicación instalada). */
+.studio13-admin-shell {
+  padding-right: env(safe-area-inset-right);
+  padding-left: env(safe-area-inset-left);
+}
+.studio13-admin-sidebar {
+  padding-top: calc(2rem + env(safe-area-inset-top)) !important;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)) !important;
+  padding-left: calc(1.25rem + env(safe-area-inset-left)) !important;
+}
+.studio13-admin-body { padding-bottom: env(safe-area-inset-bottom); }
+.studio13-admin-mobilebar {
+  min-height: calc(56px + env(safe-area-inset-top)) !important;
+  padding-top: env(safe-area-inset-top) !important;
+  padding-right: calc(16px + env(safe-area-inset-right)) !important;
+  padding-left: calc(16px + env(safe-area-inset-left)) !important;
+}
+.quote-detail-footer { padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important; }
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .studio13-admin-mobilebar {
+    min-height: calc(58px + env(safe-area-inset-top)) !important;
+    padding-right: calc(24px + env(safe-area-inset-right)) !important;
+    padding-left: calc(24px + env(safe-area-inset-left)) !important;
+  }
+}

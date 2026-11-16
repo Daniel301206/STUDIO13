@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, "");
 const categoriasReserva = [
   { id: "SESION", nombre: "Sesiones", endpoint: "/api/paquetes?seccion=SESION" },
   { id: "ALQUILER", nombre: "Alquiler", endpoint: "/api/paquetes?seccion=ALQUILER" },
@@ -70,7 +70,8 @@ function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, sald
     };
   }, []);
 
-  const continuar = () => {
+  const continuar = (event) => {
+    event.preventDefault();
     if (!pagoEnLineaDisponible) {
       setAviso("El pago en línea aún no está disponible. No se realizó ningún cargo ni se envió la solicitud. Cancela y usa «Enviar solicitud» para reservar sin pagar.");
       return;
@@ -95,13 +96,14 @@ function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, sald
         aria-labelledby="pago-adelantado-titulo"
         className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto border border-[rgba(26,24,24,0.18)] bg-[#f8f7f4] p-5 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-8"
       >
+        <form onSubmit={continuar} noValidate aria-label="Formulario de pago por adelantado">
         <header className="mb-6 flex items-start justify-between gap-4 border-b border-[rgba(26,24,24,0.12)] pb-4">
           <div>
-            <p className="t-label mb-2 text-[#a51c1c]!">Reserva</p>
+            <p className="t-label mb-2 text-[#a51c1c]!">Pago</p>
             <h2 id="pago-adelantado-titulo" className="m-0 font-[Fraunces,Georgia,serif] text-2xl font-extralight italic text-[#1a1818] sm:text-3xl">
               Pago por adelantado
             </h2>
-            <p className="t-body mb-0 mt-2 text-[0.8rem]!">Revisa los datos antes de continuar.</p>
+            <p className="t-body mb-0 mt-2 text-[0.8rem]!">Revisa los datos antes de continuar. Este formulario de pago es independiente de la solicitud de reserva.</p>
           </div>
           <button
             ref={closeRef}
@@ -156,12 +158,6 @@ function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, sald
                   <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{saldoFormateado}</dd>
                 </div>
               )}
-              <div className="flex items-baseline justify-between gap-4">
-                <dt className="font-['Inter'] text-sm text-[#5a5856]">Método de pago</dt>
-                <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">
-                  {pagoEnLineaDisponible ? "Pago en línea" : "Pago en línea (no disponible)"}
-                </dd>
-              </div>
             </dl>
             {!precioFormateado && (
               <p className="t-body mb-0 mt-3 text-[0.75rem]!">El precio de este paquete se confirmará con el estudio.</p>
@@ -169,6 +165,21 @@ function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, sald
             {!adelantoFormateado && (
               <p className="t-body mb-0 mt-1 text-[0.75rem]!">El importe del adelanto y el saldo pendiente se mostrarán cuando el estudio los configure.</p>
             )}
+          </section>
+
+          <section aria-labelledby="pago-metodo-titulo">
+            <label id="pago-metodo-titulo" htmlFor="pago-metodo" className="t-label mb-3 block">Método de pago</label>
+            <select
+              id="pago-metodo"
+              name="metodoPago"
+              defaultValue="LINEA"
+              disabled
+              aria-describedby={pagoEnLineaDisponible ? undefined : "pago-no-disponible"}
+              className="w-full border border-[rgba(26,24,24,0.2)] bg-white/60 px-3 py-3 font-['Inter'] text-sm text-[#5a5856] disabled:cursor-not-allowed"
+            >
+              <option value="LINEA">Pago en línea (no disponible)</option>
+            </select>
+            <p className="t-body mb-0 mt-2 text-[0.75rem]!">No se solicitan ni almacenan datos de tarjeta en este formulario.</p>
           </section>
 
           {!pagoEnLineaDisponible && (
@@ -194,14 +205,14 @@ function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, sald
             Cancelar
           </button>
           <button
-            type="button"
-            onClick={continuar}
+            type="submit"
             aria-describedby={pagoEnLineaDisponible ? undefined : "pago-no-disponible"}
             className="border border-[#1a1818] bg-[#1a1818] px-5 py-3 font-['Inter'] text-[0.7rem] font-semibold tracking-[0.2em] uppercase text-white transition-colors hover:border-[#a51c1c] hover:bg-[#a51c1c]"
           >
             Continuar
           </button>
         </footer>
+        </form>
       </section>
     </div>,
     document.body,
@@ -284,12 +295,13 @@ export default function Contacto() {
 
   const handlePagar = () => {
     if (enviandoRef.current) return;
-    if (formRef.current && !formRef.current.reportValidity()) return;
     const validacion = validarReserva();
     if (validacion) {
       setErrorEnvio(validacion);
+      formRef.current?.reportValidity();
       return;
     }
+    formRef.current?.reportValidity();
     setErrorEnvio("");
     setPagoAbierto(true);
   };
@@ -593,7 +605,7 @@ export default function Contacto() {
                         <button
                           type="submit"
                           className="btn-ghost disabled:cursor-not-allowed disabled:opacity-45"
-                          disabled={enviando || cargandoOpciones || (!opcionesPaquete.length && categoriaReserva.id !== "SESION")}
+                          disabled={enviando || cargandoOpciones}
                         >
                           {enviando ? "Enviando..." : "Enviar solicitud"}
                         </button>
@@ -601,7 +613,7 @@ export default function Contacto() {
                           type="button"
                           onClick={handlePagar}
                           className="inline-flex items-center justify-center border border-[#1a1818] px-4 py-3 font-['Inter'] text-[0.7rem] font-semibold tracking-[0.2em] uppercase text-[#1a1818] transition-colors duration-200 hover:border-[#a51c1c] hover:bg-[#1a1818] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
-                          disabled={enviando || cargandoOpciones || (!opcionesPaquete.length && categoriaReserva.id !== "SESION")}
+                          disabled={enviando || cargandoOpciones}
                         >
                           Pagar por adelantado
                         </button>

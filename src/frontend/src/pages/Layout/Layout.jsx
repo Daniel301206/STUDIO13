@@ -36,7 +36,7 @@ export default function Layout({ children }) {
       {/* ── NAV ── */}
       <nav
         className={[
-          "fixed top-0 left-0 right-0 z-100 border-b transition-all duration-400",
+          "site13-nav fixed top-0 left-0 right-0 z-100 border-b transition-all duration-400",
           isHome
             ? scrolled
               ? "bg-[rgba(12,11,11,0.97)] border-white/5 backdrop-blur-md"
@@ -133,12 +133,12 @@ export default function Layout({ children }) {
       </nav>
 
       {/* ── PAGE ── */}
-      <main className={`flex-1 ${isHome ? "pt-0" : "pt-14.5"}`}>
+      <main className={`site13-main flex-1 ${isHome ? "pt-0" : "site13-main-con-nav"}`}>
         {children ?? <Outlet />}
       </main>
 
       {/* ── FOOTER ── */}
-      <footer className="bg-[#111010] text-white mt-auto">
+      <footer className="site13-footer bg-[#111010] text-white mt-auto">
         <div className="max-w-340 mx-auto px-10 pt-16 pb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
           <div>
             <div className="font-[Fraunces,Georgia,serif] italic font-extralight text-[1.8rem] mb-5 tracking-[0.04em]">

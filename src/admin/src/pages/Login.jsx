@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/studio13_negro.PNG';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, '');
 const loginPhoto = 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=2000&h=1300&fit=crop&auto=format&q=90';
 
 export default function Login() {

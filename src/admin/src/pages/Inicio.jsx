@@ -5,7 +5,7 @@ import portada2 from "../assets/imagen02.jpg";
 import portada3 from "../assets/imagen03.jpg";
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:3001"
+  import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`
 ).replace(/\/+$/, "");
 
 const recursos = [

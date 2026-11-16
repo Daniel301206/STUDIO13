@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
 import imagenServicio from "../assets/imagen_alquiler.jpg";
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, "");
 const formatDate = (value) => new Intl.DateTimeFormat("es-PE", {
   timeZone: "America/Lima",
   dateStyle: "medium",
