@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
+import CatalogoHorizontal, { claseTarjetaCatalogo } from "../Components/CatalogoHorizontal";
 import imagenServicio from "../assets/imagen_alquiler.jpg";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, "");
@@ -50,8 +51,11 @@ export default function Paquetes() {
   const [errorPaquetes, setErrorPaquetes] = useState("");
   const [cargandoCatalogo, setCargandoCatalogo] = useState(true);
   const [errorCatalogo, setErrorCatalogo] = useState("");
+  const [revisionCatalogo, setRevisionCatalogo] = useState(0);
   const [cargandoMembresias, setCargandoMembresias] = useState(true);
   const [errorMembresias, setErrorMembresias] = useState("");
+  const filaPestanasRef = useRef(null);
+  const ultimaCargaCatalogoRef = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -67,6 +71,13 @@ export default function Paquetes() {
     return () => controller.abort();
   }, []);
 
+  const refrescarCatalogo = useCallback(() => {
+    const ahora = Date.now();
+    if (ahora - ultimaCargaCatalogoRef.current < 1500) return;
+    ultimaCargaCatalogoRef.current = ahora;
+    setRevisionCatalogo((valor) => valor + 1);
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     Promise.all(["ALQUILER", "TARIFA"].map(async (seccion) => {
@@ -79,11 +90,30 @@ export default function Paquetes() {
         if (controller.signal.aborted) return;
         setAlquileres(resultados.find(([seccion]) => seccion === "ALQUILER")?.[1] || []);
         setTarifas(resultados.find(([seccion]) => seccion === "TARIFA")?.[1] || []);
+        setErrorCatalogo("");
       })
       .catch((error) => { if (!controller.signal.aborted) setErrorCatalogo(error.message); })
       .finally(() => { if (!controller.signal.aborted) setCargandoCatalogo(false); });
     return () => controller.abort();
-  }, []);
+  }, [revisionCatalogo]);
+
+  // Al volver desde el panel administrativo (otra pestaña) o cambiar a Alquiler/Tarifas,
+  // se vuelve a consultar la API para mostrar los cambios recién publicados sin recargar.
+  useEffect(() => {
+    const alRecuperarFoco = () => {
+      if (document.visibilityState === "visible") refrescarCatalogo();
+    };
+    window.addEventListener("focus", alRecuperarFoco);
+    document.addEventListener("visibilitychange", alRecuperarFoco);
+    return () => {
+      window.removeEventListener("focus", alRecuperarFoco);
+      document.removeEventListener("visibilitychange", alRecuperarFoco);
+    };
+  }, [refrescarCatalogo]);
+
+  useEffect(() => {
+    if (tab === "rates" || tab === "rental") refrescarCatalogo();
+  }, [tab, refrescarCatalogo]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -171,6 +201,17 @@ export default function Paquetes() {
     if (tab === "campaigns" && paquetesCampania.length === 0) setTab("session");
   }, [tab, paquetesCampania.length]);
 
+  // Mantiene visible la pestaña activa sin desplazar la página en vertical.
+  useEffect(() => {
+    const fila = filaPestanasRef.current;
+    const activa = fila?.querySelector('[data-pestana-activa="true"]');
+    if (!fila || !activa) return;
+    const inicio = activa.offsetLeft;
+    const fin = inicio + activa.offsetWidth;
+    if (inicio < fila.scrollLeft) fila.scrollTo({ left: inicio, behavior: "smooth" });
+    else if (fin > fila.scrollLeft + fila.clientWidth) fila.scrollTo({ left: fin - fila.clientWidth, behavior: "smooth" });
+  }, [tab, paquetesCampania.length]);
+
   return (
     <Layout>
       <div className="bg-white">
@@ -186,30 +227,34 @@ export default function Paquetes() {
         </header>
 
         {/* TABS */}
-        <div className="border-b border-[rgba(26,24,24,0.08)] px-8 md:px-12 flex">
-          {["session", ...(paquetesCampania.length > 0 ? ["campaigns"] : []), "rental", "rates", "memberships"].map((type) => (
-            <button
-              key={type}
-              onClick={() => setTab(type)}
-              className={`font-['Inter'] font-normal text-[0.65rem] tracking-[0.22em] uppercase bg-transparent border-0 border-b pt-[1.1rem] pb-[1.1rem] pr-6 mr-6 cursor-pointer transition-colors duration-200
-              ${
-                tab === type
-                  ? "text-[#1a1818] border-[#a51c1c]"
-                  : "text-[#aaa8a4] border-transparent"
-              }
-            `}
-            >
-              {type === "session"
-                ? "Sesiones"
-                : type === "campaigns"
-                  ? "Campañas"
-                : type === "rental"
-                  ? "Alquiler"
-                  : type === "rates"
-                    ? "Tarifas"
-                    : "Membresías"}
-            </button>
-          ))}
+        <div className="border-b border-[rgba(26,24,24,0.08)] px-8 md:px-12">
+          <div ref={filaPestanasRef} className="flex flex-nowrap overflow-x-auto [scrollbar-width:thin]">
+            {["session", ...(paquetesCampania.length > 0 ? ["campaigns"] : []), "rental", "rates", "memberships"].map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setTab(type)}
+                data-pestana-activa={tab === type}
+                className={`shrink-0 whitespace-nowrap font-['Inter'] font-normal text-[0.65rem] tracking-[0.22em] uppercase bg-transparent border-0 border-b pt-[1.1rem] pb-[1.1rem] pr-6 mr-6 cursor-pointer transition-colors duration-200
+                ${
+                  tab === type
+                    ? "text-[#1a1818] border-[#a51c1c]"
+                    : "text-[#aaa8a4] border-transparent"
+                }
+              `}
+              >
+                {type === "session"
+                  ? "Sesiones"
+                  : type === "campaigns"
+                    ? "Campañas"
+                  : type === "rental"
+                    ? "Alquiler"
+                    : type === "rates"
+                      ? "Tarifas"
+                      : "Membresías"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* SESSION PACKAGES */}
@@ -220,19 +265,12 @@ export default function Paquetes() {
             {cargandoPaquetes && <p className="t-body py-8">Cargando paquetes...</p>}
             {errorPaquetes && <p className="py-8 text-sm text-[#a51c1c]" role="alert">{errorPaquetes}</p>}
             {!cargandoPaquetes && !errorPaquetes && paquetesRegulares.length === 0 && <p className="t-body py-8">Pronto publicaremos nuestros paquetes.</p>}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 items-stretch border-t border-[rgba(26,24,24,0.1)]">
-              {paquetesRegulares.map((pkg, index) => (
+            {paquetesRegulares.length > 0 && (
+            <CatalogoHorizontal ariaLabel="Paquetes de sesiones" className="border-t border-[rgba(26,24,24,0.1)]">
+              {paquetesRegulares.map((pkg) => (
                 <div
                   key={pkg.id}
-                  className={`
-                  p-8 relative flex flex-col
-                  border-b border-[rgba(26,24,24,0.1)]
-                  ${
-                    index < paquetes.length - 1
-                      ? "xl:border-r border-[rgba(26,24,24,0.1)]"
-                      : ""
-                  }
-                `}
+                  className={`${claseTarjetaCatalogo} p-8 relative flex flex-col border-b border-r border-[rgba(26,24,24,0.1)]`}
                 >
                   {pkg.imagenUrl && <img src={pkg.imagenUrl} alt={pkg.nombre} className="-mx-8 -mt-8 mb-6 h-40 w-[calc(100%+4rem)] object-cover" />}
                   {pkg.featured && (
@@ -273,16 +311,17 @@ export default function Paquetes() {
                   </Link>
                 </div>
               ))}
-            </div>
+            </CatalogoHorizontal>
+            )}
           </section>
         )}
 
         {tab === "campaigns" && paquetesCampania.length > 0 && (
           <section className="px-8 py-12 md:px-12">
             {campaniaVigente && <p className="mx-auto mb-6 max-w-340 font-['Inter'] text-xs text-[#8a8880]">Promoción del {formatDate(campania.inicio)} al {formatDate(campania.fin)}</p>}
-            <div className="mx-auto grid max-w-340 grid-cols-1 border-t border-[rgba(26,24,24,0.1)] md:grid-cols-2 xl:grid-cols-4">
+            <CatalogoHorizontal ariaLabel="Paquetes de campaña" className="mx-auto max-w-340 border-t border-[rgba(26,24,24,0.1)]">
               {paquetesCampania.map((pkg) => (
-                <article key={pkg.id} className="relative flex flex-col border-b border-[rgba(26,24,24,0.1)] p-8 md:border-r">
+                <article key={pkg.id} className={`${claseTarjetaCatalogo} relative flex flex-col border-b border-r border-[rgba(26,24,24,0.1)] p-8`}>
                   {pkg.imagenUrl && <img src={pkg.imagenUrl} alt={pkg.nombre} className="-mx-8 -mt-8 mb-6 h-40 w-[calc(100%+4rem)] object-cover" />}
                   <p className="mb-6 font-[Fraunces,Georgia,serif] text-base font-light uppercase tracking-widest text-[#8a8880]">{pkg.nombre}</p>
                   <p className="mb-1 font-[Fraunces,Georgia,serif] text-[2.4rem] font-extralight leading-none text-[#1a1818]">{mostrarPrecio(pkg.precio)}</p>
@@ -293,7 +332,7 @@ export default function Paquetes() {
                   <Link to={`/contacto?paqueteId=${encodeURIComponent(pkg.id)}`} className="btn-ghost mt-auto text-[0.62rem]">Reservar sesión</Link>
                 </article>
               ))}
-            </div>
+            </CatalogoHorizontal>
           </section>
         )}
 
@@ -318,19 +357,15 @@ export default function Paquetes() {
             </div>
 
             {/* RENTAL GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-3 items-stretch border-t border-[rgba(26,24,24,0.1)]">
-              {cargandoCatalogo && <p className="t-body py-8">Cargando servicios de alquiler...</p>}
-              {errorCatalogo && <p className="py-8 text-sm text-[#a51c1c]" role="alert">{errorCatalogo}</p>}
-              {!cargandoCatalogo && !errorCatalogo && alquileres.length === 0 && <p className="t-body py-8">Pronto publicaremos servicios de alquiler.</p>}
-              {alquileres.map((pkg, index) => (
+            {cargandoCatalogo && <p className="t-body py-8">Cargando servicios de alquiler...</p>}
+            {errorCatalogo && <p className="py-8 text-sm text-[#a51c1c]" role="alert">{errorCatalogo}</p>}
+            {!cargandoCatalogo && !errorCatalogo && alquileres.length === 0 && <p className="t-body py-8">Pronto publicaremos servicios de alquiler.</p>}
+            {alquileres.length > 0 && (
+            <CatalogoHorizontal ariaLabel="Servicios de alquiler" className="border-t border-[rgba(26,24,24,0.1)]">
+              {alquileres.map((pkg) => (
                 <div
-                  key={pkg.id} className={` p-8 border-b border-[rgba(26,24,24,0.1)] relative flex h-full flex-col
-                  ${
-                    index < alquileres.length - 1
-                      ? "md:border-r border-[rgba(26,24,24,0.1)]"
-                      : ""
-                  }
-                `}
+                  key={pkg.id}
+                  className={`${claseTarjetaCatalogo} p-8 border-b border-r border-[rgba(26,24,24,0.1)] relative flex flex-col`}
                 >
                   {pkg.imagenUrl && <img src={pkg.imagenUrl} alt={pkg.nombre} className="-mx-8 -mt-8 mb-6 h-40 w-[calc(100%+4rem)] object-cover" />}
 
@@ -364,7 +399,8 @@ export default function Paquetes() {
                   </Link>
                 </div>
               ))}
-            </div>
+            </CatalogoHorizontal>
+            )}
 
             {/* EQUIPMENT */}
             <div className="mt-12 py-8 border-t border-[rgba(26,24,24,0.08)]">
@@ -411,17 +447,19 @@ export default function Paquetes() {
             {cargandoCatalogo && <p className="t-body py-8">Cargando tarifas...</p>}
             {errorCatalogo && <p className="py-8 text-sm text-[#a51c1c]" role="alert">{errorCatalogo}</p>}
             {!cargandoCatalogo && !errorCatalogo && tarifas.length === 0 && <p className="t-body py-8">Pronto publicaremos nuestras tarifas.</p>}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 border-t border-[rgba(26,24,24,0.1)]">
+            {tarifas.length > 0 && (
+            <CatalogoHorizontal ariaLabel="Tarifas" className="border-t border-[rgba(26,24,24,0.1)]">
               {tarifas.map((tarifa) => (
-                <article key={tarifa.id} className="border-b border-[rgba(26,24,24,0.1)] p-6">
+                <article key={tarifa.id} className={`${claseTarjetaCatalogo} flex flex-col border-b border-r border-[rgba(26,24,24,0.1)] p-6`}>
                   {tarifa.imagenUrl && <img src={tarifa.imagenUrl} alt={tarifa.nombre} className="-mx-6 -mt-6 mb-5 h-40 w-[calc(100%+3rem)] object-cover" />}
                   <h2 className="mb-3 font-[Fraunces,Georgia,serif] text-base font-light tracking-widest uppercase text-[#8a8880]">{tarifa.nombre}</h2>
                   <p className="mb-4 font-[Fraunces,Georgia,serif] text-2xl font-light text-[#1a1818]">{mostrarPrecio(tarifa.precio)}</p>
                   {tarifa.descripcion && <p className="t-body mb-5 whitespace-pre-wrap">{tarifa.descripcion}</p>}
-                  {(tarifa.caracteristicas || []).length > 0 && <ul className="grid gap-2 border-t border-[rgba(26,24,24,0.08)] pt-4 text-sm text-[#5a5856]">{tarifa.caracteristicas.map((item) => <li key={item.id} className="flex gap-2"><span className="text-[#a51c1c]">•</span><span>{item.nombre}</span></li>)}</ul>}
+                  {(tarifa.caracteristicas || []).length > 0 && <ul className="mt-auto grid gap-2 border-t border-[rgba(26,24,24,0.08)] pt-4 text-sm text-[#5a5856]">{tarifa.caracteristicas.map((item) => <li key={item.id} className="flex gap-2"><span className="text-[#a51c1c]">•</span><span>{item.nombre}</span></li>)}</ul>}
                 </article>
               ))}
-            </div>
+            </CatalogoHorizontal>
+            )}
 
             <p className="t-body text-[0.72rem] mt-5 text-[#aaa8a4] italic">
               * Precios en colones costarricenses. Sujetos a cambio. Contáctanos
@@ -437,19 +475,21 @@ export default function Paquetes() {
             {cargandoMembresias && <p className="t-body py-8">Cargando membresías...</p>}
             {errorMembresias && <p className="py-8 text-sm text-[#a51c1c]" role="alert">{errorMembresias}</p>}
             {!cargandoMembresias && !errorMembresias && membresias.length === 0 && <p className="t-body py-8">Pronto publicaremos nuestras membresías.</p>}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 border-t border-[rgba(26,24,24,0.1)]">
+            {membresias.length > 0 && (
+            <CatalogoHorizontal ariaLabel="Membresías" className="border-t border-[rgba(26,24,24,0.1)]">
               {membresias.map((membresia) => (
-                <article key={membresia.id} className="border-b border-[rgba(26,24,24,0.1)] p-6">
+                <article key={membresia.id} className={`${claseTarjetaCatalogo} flex flex-col border-b border-r border-[rgba(26,24,24,0.1)] p-6`}>
                   <h2 className="mb-3 font-[Fraunces,Georgia,serif] text-base font-light tracking-widest uppercase text-[#8a8880]">{membresia.nombre}</h2>
                   <p className="mb-2 font-[Fraunces,Georgia,serif] text-2xl font-light text-[#1a1818]">{mostrarPrecio(membresia.precio)}</p>
                   <p className="t-body mb-4 text-[0.75rem]">{({ MENSUAL: "Mensual", TRIMESTRAL: "Trimestral", ANUAL: "Anual" })[membresia.periodo] || `${membresia.duracionDias} días`}</p>
                   {membresia.descripcion && <p className="t-body mb-5 whitespace-pre-wrap">{membresia.descripcion}</p>}
                   {(membresia.beneficiosItems || []).length > 0 && <ul className="grid gap-2 border-t border-[rgba(26,24,24,0.08)] pt-4 text-sm text-[#5a5856]">{membresia.beneficiosItems.map((item) => <li key={item.id} className="flex gap-2"><span className="text-[#a51c1c]">•</span><span>{item.nombre}</span></li>)}</ul>}
                   {membresia.limiteSesiones != null && <p className="t-body mt-4 text-[0.75rem]">Hasta {membresia.limiteSesiones} sesiones</p>}
-                  <Link to="/contacto" className="btn-ghost mt-6 text-[0.62rem]">Consultar membresía</Link>
+                  <div className="mt-auto pt-6"><Link to="/contacto" className="btn-ghost text-[0.62rem]">Consultar membresía</Link></div>
                 </article>
               ))}
-            </div>
+            </CatalogoHorizontal>
+            )}
           </div>
         </section>}
 

@@ -27,7 +27,7 @@ const listPublic = async (_req, res) => {
     const anuncios = await prisma.imagen.findMany({
       where: { tipo: tipoPublicidad, activo: true, OR: [{ visibleHasta: null }, { visibleHasta: { gt: new Date() } }] },
       orderBy: [{ orden: "asc" }, { createdAt: "desc" }],
-      select: { id: true, nombre: true, url: true, seccion: true, descripcion: true, mostrarWhatsapp: true, visibleHasta: true },
+      select: { id: true, nombre: true, url: true, seccion: true, descripcion: true, mostrarWhatsapp: true, visibleHasta: true, enfoqueX: true, enfoqueY: true },
     });
     res.set("Cache-Control", "no-store");
     return res.json(anuncios);

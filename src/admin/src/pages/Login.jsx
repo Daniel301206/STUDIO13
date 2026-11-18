@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/studio13_negro.PNG';
+import imagenAdmin from '../assets/image_portadaAdmin.jpg'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, '');
-const loginPhoto = 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=2000&h=1300&fit=crop&auto=format&q=90';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -133,12 +133,12 @@ export default function Login() {
                   />
                   Recordarme
                 </label>
-                <a
-                  href="#"
+                <Link
+                  to="/recuperar-contrasena"
                   className="text-right text-xs font-semibold text-[#c8102e] underline-offset-4 transition hover:text-[#a50d27] hover:underline focus-visible:outline focus-visible:outline-offset-4 focus-visible:outline-[#c8102e]"
                 >
                   ¿Olvidaste tu contraseña?
-                </a>
+                </Link>
               </div>
 
               {error && (
@@ -167,7 +167,7 @@ export default function Login() {
 
         <section className="group relative min-h-65 overflow-hidden bg-[#0a0a0a] md:min-h-162.5" aria-label="Fotografía profesional de Studio13">
           <img
-            src={loginPhoto}
+            src={imagenAdmin}
             alt="Fotografía profesional de Studio13"
             fetchPriority="high"
             className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.025]"
@@ -181,7 +181,7 @@ export default function Login() {
               Capturamos momentos que merecen quedarse.
             </p>
           </div>
-          <span className="absolute right-7 top-7 rounded-full border border-white/35 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/85 sm:right-10 sm:top-10">
+          <span className="absolute right-7 top-7 rounded-full border border-white/35 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/90 sm:right-10 sm:top-10">
             Studio13 · Est. 2017
           </span>
         </section>

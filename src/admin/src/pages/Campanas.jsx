@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL, adminHeaders, mensajeError, redirigirSiNoAutorizado, useAdminCollection } from "./useAdminCollection.js";
+import { comprimirImagenParaSubida } from "./ImageCompretion.js";
 
 const formularioVacio = { titulo: "", descripcion: "", inicio: "", fin: "", paqueteId: "", habilitada: true };
 const campo = "w-full border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-[#a51c1c]";
@@ -43,9 +44,14 @@ export default function Campanas() {
   const [imagen, setImagen] = useState(null);
   const [vistaPrevia, setVistaPrevia] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [optimizandoImagen, setOptimizandoImagen] = useState(false);
   const [errorOperacion, setErrorOperacion] = useState("");
   const [mensajeExito, setMensajeExito] = useState("");
   const [eliminandoId, setEliminandoId] = useState(null);
+  const paquetesCampania = paquetes.filter((paquete) =>
+    (paquete.seccion === "CAMPANIA" && paquete.activo) ||
+    (campaniaEditando && Number(paquete.id) === Number(campaniaEditando.paqueteId)),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -56,7 +62,7 @@ export default function Campanas() {
         if (!response.ok) throw new Error(body.error || "No se pudieron cargar los paquetes.");
         return body;
       })
-      .then((body) => { if (!controller.signal.aborted) setPaquetes(body.filter((paquete) => paquete.activo && (paquete.seccion === "CAMPANIA" || paquete.seccion === "SESION"))); })
+      .then((body) => { if (!controller.signal.aborted) setPaquetes(body); })
       .catch((reason) => { if (!controller.signal.aborted) setErrorPaquetes(mensajeError(reason)); });
     return () => controller.abort();
   }, [navigate]);
@@ -74,7 +80,8 @@ export default function Campanas() {
 
   const abrirNueva = () => {
     setCampaniaEditando(null);
-    setBorrador({ ...formularioVacio, paqueteId: paquetes[0] ? String(paquetes[0].id) : "" });
+    const primerPaquete = paquetes.find((paquete) => paquete.seccion === "CAMPANIA" && paquete.activo);
+    setBorrador({ ...formularioVacio, paqueteId: primerPaquete ? String(primerPaquete.id) : "" });
     setImagen(null);
     setVistaPrevia("");
     setErrorOperacion("");
@@ -99,7 +106,7 @@ export default function Campanas() {
 
   const guardar = async (evento) => {
     evento.preventDefault();
-    if (guardando) return;
+    if (guardando || optimizandoImagen) return;
     if (!campaniaEditando && !imagen) return setErrorOperacion("Selecciona una imagen para la campaña.");
     const inicio = fechaPeruIso(borrador.inicio);
     const fin = fechaPeruIso(borrador.fin);
@@ -113,12 +120,17 @@ export default function Campanas() {
     formData.set("fin", fin);
     formData.set("paqueteId", borrador.paqueteId);
     formData.set("habilitada", String(borrador.habilitada));
-    if (imagen) formData.set("imagen", imagen);
 
     setGuardando(true);
+    setOptimizandoImagen(Boolean(imagen));
     setErrorOperacion("");
     setMensajeExito("");
     try {
+      if (imagen) {
+        const imagenComprimida = await comprimirImagenParaSubida(imagen);
+        formData.set("imagen", imagenComprimida, imagenComprimida.name);
+        setOptimizandoImagen(false);
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/campanias${campaniaEditando ? `/${campaniaEditando.id}` : ""}`, {
         method: campaniaEditando ? "PATCH" : "POST",
         headers: adminHeaders(),
@@ -135,6 +147,7 @@ export default function Campanas() {
     } catch (reason) {
       setErrorOperacion(mensajeError(reason));
     } finally {
+      setOptimizandoImagen(false);
       setGuardando(false);
     }
   };
@@ -197,7 +210,7 @@ export default function Campanas() {
       {mensajeExito && <p className="mb-4 text-sm text-neutral-800" role="status">{mensajeExito}</p>}
       {errorOperacion && !modalAbierto && <p className="mb-4 text-sm text-[#a51c1c]" role="alert">{errorOperacion}</p>}
       {errorPaquetes && <p className="mb-4 text-sm text-[#a51c1c]" role="alert">{errorPaquetes}</p>}
-      {!errorPaquetes && !paquetes.some((paquete) => paquete.seccion === "CAMPANIA") && <p className="mb-4 border border-neutral-200 bg-white p-4 text-sm text-neutral-600">Primero publica un paquete en Paquetes → Campañas para poder asociarlo a un anuncio.</p>}
+      {!errorPaquetes && !paquetes.some((paquete) => paquete.seccion === "CAMPANIA" && paquete.activo) && <p className="mb-4 border border-neutral-200 bg-white p-4 text-sm text-neutral-600">Primero publica un paquete en Paquetes → Campañas para poder asociarlo a un anuncio.</p>}
 
       {error ? <div className="border border-neutral-200 bg-white p-5 text-sm text-[#a51c1c]" role="alert">{error}<button className="ml-3 underline" type="button" onClick={recargar}>Reintentar</button></div>
         : cargando ? <p className="border border-neutral-200 bg-white p-8 text-sm text-neutral-500">Cargando campañas…</p>
@@ -213,20 +226,20 @@ export default function Campanas() {
               </div>
             </article>;
           })}</div>
-          : <div className="border border-neutral-200 bg-white px-6 py-12 text-center"><h2 className="mb-2 font-[Georgia] text-xl font-normal! text-neutral-900">Todavía no hay campañas</h2><p className="mb-5 text-sm text-neutral-500">Crea una campaña para mostrar una promoción de temporada en Inicio.</p><button type="button" disabled={!paquetes.length} onClick={abrirNueva} className="border border-[#a51c1c] bg-[#a51c1c] px-4 py-2.5 text-xs font-semibold! text-white disabled:opacity-50">Nueva campaña</button></div>}
+          : <div className="border border-neutral-200 bg-white px-6 py-12 text-center"><h2 className="mb-2 font-[Georgia] text-xl font-normal! text-neutral-900">Todavía no hay campañas</h2><p className="mb-5 text-sm text-neutral-500">Crea una campaña para mostrar una promoción de temporada en Inicio.</p><button type="button" disabled={!paquetesCampania.length} onClick={abrirNueva} className="border border-[#a51c1c] bg-[#a51c1c] px-4 py-2.5 text-xs font-semibold! text-white disabled:opacity-50">Nueva campaña</button></div>}
 
       {modalAbierto && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 p-3 sm:p-4" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) limpiarModal(); }}><section role="dialog" aria-modal="true" aria-labelledby="campania-modal-titulo" className="my-auto max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-neutral-300 bg-white p-5 shadow-2xl sm:p-7">
         <p className="mb-2 text-[10px] font-semibold! tracking-[.2em] text-[#a51c1c] uppercase">Promoción de temporada</p><h2 id="campania-modal-titulo" className="mb-5 font-[Georgia] text-2xl font-normal! text-neutral-900">{campaniaEditando ? "Editar campaña" : "Nueva campaña"}</h2>
         <form className="grid gap-4" onSubmit={guardar}>
           <label className={etiqueta}>Título<input className={campo} required maxLength={140} value={borrador.titulo} onChange={(evento) => setBorrador((actual) => ({ ...actual, titulo: evento.target.value }))} /></label>
           <label className={etiqueta}>Descripción<textarea className={campo} required rows={4} value={borrador.descripcion} onChange={(evento) => setBorrador((actual) => ({ ...actual, descripcion: evento.target.value }))} /></label>
-          <label className={etiqueta}>Paquete asociado<select className={campo} required value={borrador.paqueteId} onChange={(evento) => setBorrador((actual) => ({ ...actual, paqueteId: evento.target.value }))}><option value="">Selecciona un paquete</option>{paquetes.filter((paquete) => paquete.seccion === "CAMPANIA" || (campaniaEditando && Number(paquete.id) === Number(campaniaEditando.paqueteId))).map((paquete) => <option key={paquete.id} value={paquete.id}>{paquete.nombre} (ID {paquete.id})</option>)}</select></label>
+          <label className={etiqueta}>Paquete asociado<select className={campo} required value={borrador.paqueteId} onChange={(evento) => setBorrador((actual) => ({ ...actual, paqueteId: evento.target.value }))}><option value="">Selecciona un paquete</option>{paquetesCampania.map((paquete) => <option key={paquete.id} value={paquete.id}>{paquete.nombre} (ID {paquete.id})</option>)}</select></label>
           <div className="grid gap-4 sm:grid-cols-2"><label className={etiqueta}>Inicio (hora de Perú)<input className={campo} required type="datetime-local" value={borrador.inicio} onChange={(evento) => setBorrador((actual) => ({ ...actual, inicio: evento.target.value }))} /></label><label className={etiqueta}>Fin (hora de Perú)<input className={campo} required type="datetime-local" value={borrador.fin} onChange={(evento) => setBorrador((actual) => ({ ...actual, fin: evento.target.value }))} /></label></div>
           <label className={etiqueta}>Imagen de campaña<input className={campo} required={!campaniaEditando} type="file" accept="image/jpeg,image/png,image/webp" onChange={(evento) => { const file = evento.target.files?.[0] || null; setImagen(file); setVistaPrevia(file ? URL.createObjectURL(file) : campaniaEditando?.imagenUrl || ""); }} /><span className="font-normal! text-neutral-500">JPG, PNG o WEBP; hasta 5 MB.</span></label>
           {vistaPrevia && <img src={vistaPrevia} alt="Vista previa de la campaña" className="max-h-56 w-full border border-neutral-200 object-cover" />}
           <label className="flex items-center gap-3 text-xs font-semibold! text-neutral-700"><input type="checkbox" checked={borrador.habilitada} onChange={(evento) => setBorrador((actual) => ({ ...actual, habilitada: evento.target.checked }))} className="accent-[#a51c1c]" />Campaña habilitada durante las fechas indicadas</label>
           {errorOperacion && <p className="m-0 text-sm text-[#a51c1c]" role="alert">{errorOperacion}</p>}
-          <div className="sticky bottom-0 -mx-5 mt-1 flex justify-end gap-2 border-t border-neutral-200 bg-white px-5 pt-3 sm:-mx-7 sm:px-7"><button type="button" disabled={guardando} onClick={limpiarModal} className="border border-neutral-300 px-4 py-2.5 text-xs font-semibold! text-neutral-700">Cancelar</button><button type="submit" disabled={guardando || !paquetes.length} className="border border-[#a51c1c] bg-[#a51c1c] px-4 py-2.5 text-xs font-semibold! text-white disabled:opacity-60">{guardando ? "Guardando…" : "Guardar campaña"}</button></div>
+          <div className="sticky bottom-0 -mx-5 mt-1 flex justify-end gap-2 border-t border-neutral-200 bg-white px-5 pt-3 sm:-mx-7 sm:px-7"><button type="button" disabled={guardando} onClick={limpiarModal} className="border border-neutral-300 px-4 py-2.5 text-xs font-semibold! text-neutral-700">Cancelar</button><button type="submit" disabled={guardando || optimizandoImagen || !paquetesCampania.length} className="border border-[#a51c1c] bg-[#a51c1c] px-4 py-2.5 text-xs font-semibold! text-white disabled:opacity-60">{optimizandoImagen ? "Optimizando imagen…" : guardando ? "Guardando…" : "Guardar campaña"}</button></div>
         </form>
       </section></div>}
     </main>

@@ -14,6 +14,7 @@ export default function GestionPublicidad() {
   const [formulario, setFormulario] = useState(formularioVacio);
   const { filas: anuncios, setFilas: setAnuncios, cargando, error, recargar } = useAdminCollection("/api/admin/publicidad");
   const [guardando, setGuardando] = useState(false);
+  const [optimizandoImagen, setOptimizandoImagen] = useState(false);
   const [errorOperacion, setErrorOperacion] = useState("");
   const [mensajeExito, setMensajeExito] = useState("");
   const [pestanaActiva, setPestanaActiva] = useState("crear");
@@ -59,9 +60,10 @@ export default function GestionPublicidad() {
 
   const crearAnuncio = async (evento) => {
     evento.preventDefault();
-    if (guardando) return;
+    if (guardando || optimizandoImagen) return;
     if (!formulario.archivoImagen) return setErrorOperacion("Selecciona una imagen para el anuncio.");
     setGuardando(true);
+    setOptimizandoImagen(true);
     setErrorOperacion("");
     setMensajeExito("");
     const datos = new FormData();
@@ -72,6 +74,7 @@ export default function GestionPublicidad() {
     datos.append("visibleHasta", formulario.visibleHasta ? `${formulario.visibleHasta}:00-05:00` : "");
     try {
       const imagenComprimida = await comprimirImagenParaSubida(formulario.archivoImagen);
+      setOptimizandoImagen(false);
       datos.append("imagen", imagenComprimida, imagenComprimida.name);
       const response = await fetch(`${API_BASE_URL}/api/admin/publicidad`, { method: "POST", headers: adminHeaders(), body: datos });
       const body = await response.json().catch(() => ({}));
@@ -85,6 +88,7 @@ export default function GestionPublicidad() {
     } catch (reason) {
       setErrorOperacion(mensajeError(reason));
     } finally {
+      setOptimizandoImagen(false);
       setGuardando(false);
     }
   };
@@ -192,7 +196,7 @@ export default function GestionPublicidad() {
             <label className={etiqueta}>Imagen del anuncio<input ref={archivoRef} className={`${campo} file:mr-3 file:cursor-pointer file:border-0 file:bg-[#a51c1c] file:px-3 file:py-2 file:text-xs file:font-semibold! file:text-white hover:file:bg-black`} type="file" accept="image/jpeg,image/png,image/webp" required onChange={(evento) => seleccionarImagen(evento.target.files?.[0])} /><span className="font-normal! text-neutral-400">JPG, PNG o WEBP. Las imágenes mayores a 5 MB se comprimen automáticamente.</span></label>
             <label className="flex items-center gap-2 text-xs font-semibold! text-neutral-700"><input type="checkbox" checked={formulario.mostrarWhatsapp} onChange={(e) => setFormulario((actual) => ({ ...actual, mostrarWhatsapp: e.target.checked }))} />Mostrar botón de WhatsApp</label>
             <label className={etiqueta}>Visible hasta <span className="font-normal! text-neutral-500">Fecha y hora de Perú (America/Lima)</span><input className={campo} type="datetime-local" value={formulario.visibleHasta} onChange={(e) => setFormulario((actual) => ({ ...actual, visibleHasta: e.target.value }))} /></label>
-            <div className="flex justify-end border-t border-neutral-200 pt-4"><button type="submit" disabled={guardando} className="border border-[#a51c1c] bg-[#a51c1c] px-5 py-2.5 text-xs font-semibold! text-white transition-colors hover:bg-black disabled:opacity-60">{guardando ? "Comprimiendo y guardando..." : "Guardar borrador"}</button></div>
+            <div className="flex justify-end border-t border-neutral-200 pt-4"><button type="submit" disabled={guardando || optimizandoImagen} className="border border-[#a51c1c] bg-[#a51c1c] px-5 py-2.5 text-xs font-semibold! text-white transition-colors hover:bg-black disabled:opacity-60">{optimizandoImagen ? "Optimizando imagen…" : guardando ? "Guardando..." : "Guardar borrador"}</button></div>
           </form>
         </section>
 

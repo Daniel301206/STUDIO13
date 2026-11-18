@@ -14,7 +14,7 @@ const requiredFields = ["nombre", "email", "tipoSesion"];
 const includeCliente = {
   cliente: { select: { id: true, nombre: true, email: true, telefono: true } },
   paquete: { select: { id: true, nombre: true, seccion: true } },
-  campania: { select: { id: true, titulo: true, paqueteId: true } },
+  campania: { select: { id: true, titulo: true, paqueteId: true, inicio: true, fin: true } },
 };
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

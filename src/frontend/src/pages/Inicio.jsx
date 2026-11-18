@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "../pages/Layout/Layout.jsx";
 import studio13Logo from "../assets/studio13_blanco.png";
-import imagenInicio01 from "../assets/imagen_Inicio01.png";
+
 import imagenFotografias01 from "../assets/imagen_fotografias01.jpg";
 import imagenFotografias02 from "../assets/imagen_fotografias02.jpg";
 import imagenFotografias03 from "../assets/imagen_fotografias03.jpg";
@@ -9,72 +9,113 @@ import { Link } from "react-router-dom";
 import Testimonios from "../Components/Testimonios.jsx";
 import AnuncioEmergente from "../Components/AnuncioEmergente.jsx";
 import CampaniaTemporada from "../Components/CampaniaTemporada.jsx";
+import { estiloEnfoque, normalizarEncuadre } from "../utils/encuadre.js";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, "");
 const normalizarNombre = (value) => value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
 const mismosDatos = (anterior, siguiente) => JSON.stringify(anterior) === JSON.stringify(siguiente);
 
-function ImagenRotativa({ imagenes, etiqueta }) {
-  const [indice, setIndice] = useState(0);
-  const [visible, setVisible] = useState(true);
-  useEffect(() => {
-    setIndice(0);
-    setVisible(true);
-    if (imagenes.length < 2) return undefined;
-    let intervalo;
-    let cambio;
-    const cambiar = () => {
-      setVisible(false);
-      cambio = window.setTimeout(() => {
-        setIndice((actual) => (actual + 1) % imagenes.length);
-        setVisible(true);
-      }, 300);
-    };
-    const inicio = window.setTimeout(() => {
-      cambiar();
-      intervalo = window.setInterval(cambiar, 4000);
-    }, 500 + Math.random() * 3000);
-    return () => { window.clearTimeout(inicio); window.clearInterval(intervalo); window.clearTimeout(cambio); };
-  }, [imagenes]);
+const DURACION_IMAGEN_VISIBLE = 8000;
+const DURACION_FUNDIDO_IMAGEN = 1500;
 
-  const imagen = imagenes[indice];
-  return imagen ? <img src={imagen} alt={etiqueta} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${visible ? "opacity-75 group-hover:opacity-90" : "opacity-0"}`} /> : <div className="absolute inset-0 bg-linear-to-br from-[#302b29] to-[#111010]" aria-hidden="true" />;
+function useMovimientoReducido() {
+  const [reducido, setReducido] = useState(() => typeof window !== "undefined" && typeof window.matchMedia === "function" ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
+    const consulta = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const alCambiar = () => setReducido(consulta.matches);
+    setReducido(consulta.matches);
+    if (typeof consulta.addEventListener === "function") consulta.addEventListener("change", alCambiar);
+    else consulta.addListener(alCambiar);
+    return () => {
+      if (typeof consulta.removeEventListener === "function") consulta.removeEventListener("change", alCambiar);
+      else consulta.removeListener(alCambiar);
+    };
+  }, []);
+  return reducido;
 }
 
-const Inicio = () => {
-  const [galerias, setGalerias] = useState([]);
-  const [anuncios, setAnuncios] = useState([]);
-  const [anuncioAbierto, setAnuncioAbierto] = useState(null);
-  const categories = [
-    {
-      label: "Bodas",
-      img: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=900&h=1100&fit=crop&auto=format&q=85",
-    },
-    {
-      label: "Familia",
-      img: "https://images.unsplash.com/photo-1609220136736-443140cffec6?w=900&h=700&fit=crop&auto=format&q=85",
-    },
-    {
-      label: "Retrato",
-      img: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=900&h=1100&fit=crop&auto=format&q=85",
-    },
-    {
-      label: "Corporativa",
-      img: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=900&h=700&fit=crop&auto=format&q=85",
-    },
-    {
-      label: "Exteriores",
-      img: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=900&h=1100&fit=crop&auto=format&q=85",
-    },
-  ];
+function ImagenRotativa({ imagenes, etiqueta }) {
+  const [indice, setIndice] = useState(0);
+  const [fundiendo, setFundiendo] = useState(false);
+  const movimientoReducido = useMovimientoReducido();
+  const total = imagenes.length;
+  const firma = imagenes.map((imagen) => `${imagen.url}|${imagen.enfoqueX}|${imagen.enfoqueY}`).join("|");
+  const indiceActual = total ? indice % total : 0;
+  const imagenActual = imagenes[indiceActual];
+  const imagenSiguiente = total > 1 ? imagenes[(indiceActual + 1) % total] : null;
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch(`${API_BASE_URL}/api/galerias`, { signal: controller.signal })
-      .then((response) => response.ok ? response.json() : [])
-      .then((data) => { if (!controller.signal.aborted && Array.isArray(data)) setGalerias((actuales) => mismosDatos(actuales, data) ? actuales : data); })
-      .catch(() => {});
-    return () => controller.abort();
+    setIndice((actual) => (total ? actual % total : 0));
+    setFundiendo(false);
+  }, [firma, total]);
+
+  useEffect(() => {
+    if (!imagenSiguiente) return;
+    const precarga = new Image();
+    precarga.src = imagenSiguiente.url;
+  }, [imagenSiguiente]);
+
+  useEffect(() => {
+    if (!imagenSiguiente || movimientoReducido) {
+      setFundiendo(false);
+      return undefined;
+    }
+    let temporizadorFundido;
+    const temporizadorEspera = window.setTimeout(() => {
+      setFundiendo(true);
+      temporizadorFundido = window.setTimeout(() => {
+        setIndice((actual) => (total ? (actual + 1) % total : 0));
+        setFundiendo(false);
+      }, DURACION_FUNDIDO_IMAGEN);
+    }, DURACION_IMAGEN_VISIBLE);
+    return () => {
+      window.clearTimeout(temporizadorEspera);
+      window.clearTimeout(temporizadorFundido);
+    };
+  }, [indiceActual, total, movimientoReducido, imagenSiguiente]);
+
+  if (!imagenActual) return <div className="absolute inset-0 bg-linear-to-br from-[#302b29] to-[#111010]" aria-hidden="true" />;
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {imagenSiguiente && <img src={imagenSiguiente.url} alt="" aria-hidden="true" style={estiloEnfoque(imagenSiguiente)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1500ms] ease-in-out ${fundiendo ? "opacity-100" : "opacity-0"}`} />}
+      <img src={imagenActual.url} alt={etiqueta} style={estiloEnfoque(imagenActual)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1500ms] ease-in-out ${fundiendo ? "opacity-0" : "opacity-100"}`} />
+    </div>
+  );
+}
+
+const categories = [
+  { label: "Bodas", secciones: ["Bodas"] },
+  { label: "Familia", secciones: ["Familia", "Fotos Familiares"] },
+  { label: "Quinceañeros", secciones: ["Quinceañero"], filtro: "Quinceañero" },
+  { label: "Corporativa", secciones: ["Corporativa", "Corporativas"] },
+  { label: "Exteriores", secciones: ["Exteriores"] },
+];
+
+const Inicio = () => {
+  const [imagenes, setImagenes] = useState([]);
+  const [anuncios, setAnuncios] = useState([]);
+  const [anuncioAbierto, setAnuncioAbierto] = useState(null);
+  useEffect(() => {
+    let controller;
+    const actualizarGaleria = async () => {
+      if (document.visibilityState !== "visible") return;
+      controller?.abort();
+      const request = new AbortController();
+      controller = request;
+      try {
+        const options = { signal: request.signal, cache: "no-store" };
+        const response = await fetch(`${API_BASE_URL}/api/imagenes`, options);
+        if (!response.ok) return;
+        const listaImagenes = await response.json();
+        if (!request.signal.aborted && Array.isArray(listaImagenes)) setImagenes(listaImagenes);
+      } catch { /* conserva las imágenes actuales si la red no está disponible */ }
+    };
+    actualizarGaleria();
+    window.addEventListener("focus", actualizarGaleria);
+    document.addEventListener("visibilitychange", actualizarGaleria);
+    return () => { controller?.abort(); window.removeEventListener("focus", actualizarGaleria); document.removeEventListener("visibilitychange", actualizarGaleria); };
   }, []);
 
   useEffect(() => {
@@ -145,29 +186,18 @@ const Inicio = () => {
     };
   }, []);
 
-  useEffect(() => {
-    let controller;
-    const actualizar = () => {
-      if (document.visibilityState !== "visible") return;
-      controller?.abort();
-      controller = new AbortController();
-      fetch(`${API_BASE_URL}/api/galerias`, { signal: controller.signal })
-        .then((response) => response.ok ? response.json() : [])
-        .then((data) => { if (!controller.signal.aborted && Array.isArray(data)) setGalerias((actuales) => mismosDatos(actuales, data) ? actuales : data); })
-        .catch(() => {});
-    };
-    window.addEventListener("focus", actualizar);
-    document.addEventListener("visibilitychange", actualizar);
-    return () => { controller?.abort(); window.removeEventListener("focus", actualizar); document.removeEventListener("visibilitychange", actualizar); };
-  }, []);
-
   const imagenesPorCategoria = useMemo(() => {
     const normalizarUrl = (url) => typeof url === "string" && url.startsWith("/uploads/") ? `${API_BASE_URL}${url}` : url;
-    return Object.fromEntries(categories.map(({ label }) => {
-      const galeria = galerias.find((item) => item.activo !== false && item.servicio?.activo !== false && normalizarNombre(item.servicio?.nombre || "") === normalizarNombre(label));
-      return [label, (galeria?.imagenes || []).filter((item) => item.activo !== false && typeof item.url === "string" && item.url.trim()).map((item) => normalizarUrl(item.url))];
+    return Object.fromEntries(categories.map(({ label, secciones }) => {
+      const claves = secciones.map(normalizarNombre);
+      const fotos = imagenes.filter((item) => item.activo !== false && item.servicio?.activo !== false && claves.includes(normalizarNombre(item.seccion || "")) && typeof item.url === "string" && item.url.trim());
+      return [label, fotos.map((item) => ({
+        id: item.id,
+        url: normalizarUrl(item.url),
+        ...normalizarEncuadre(item),
+      })).filter((foto) => /^https?:\/\//i.test(foto.url) || foto.url.startsWith(`${API_BASE_URL}/uploads/`))];
     }));
-  }, [galerias]);
+  }, [imagenes]);
 
 
   return (
@@ -176,7 +206,7 @@ const Inicio = () => {
         {/* ── HERO ── */}
         <section className="relative h-svh min-h-188 overflow-hidden bg-[#434343] sm:min-h-150">
           <img
-            src={imagenInicio01}
+           // src={}
             alt="Fotógrafo de Studio13 con su cámara"
             className="absolute right-0 bottom-0 z-0 h-auto w-[62vw] max-w-[18rem] object-contain object-bottom sm:inset-y-0 sm:h-full sm:w-auto sm:max-w-[75%] sm:object-bottom-right"
           />
@@ -184,7 +214,7 @@ const Inicio = () => {
 
           <div className="absolute bottom-12 left-5 z-10 w-[58%] max-w-140 sm:bottom-16 sm:left-12 sm:w-auto">
             <p className="mb-3 font-['Inter'] text-[0.52rem] font-normal tracking-[0.2em] text-white/70 uppercase sm:mb-[1.1rem] sm:text-[0.62rem] sm:tracking-[0.32em]">
-              Puerto Cito, Costa Rica — Est. 2017
+              Fotografía profesional — Momentos que perduran.
             </p>
             <img
               src={studio13Logo}
@@ -222,7 +252,7 @@ const Inicio = () => {
         <CampaniaTemporada />
         {anuncios.length > 0 && <section className="bg-[#f4f3f0] px-6 py-12 sm:px-12 sm:py-16" aria-labelledby="anuncios-inicio-titulo">
           <div className="mx-auto max-w-340"><p className="mb-3 text-[0.62rem] tracking-[0.32em] text-[#a51c1c] uppercase">Studio13</p><h2 id="anuncios-inicio-titulo" className="mb-8 font-[Fraunces,Georgia,serif] text-[clamp(2rem,4vw,3.5rem)] text-[#1a1818]">Anuncios</h2>
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{anuncios.map((anuncio) => <article key={anuncio.id} className="overflow-hidden border border-neutral-200 bg-white shadow-sm"><img src={anuncio.url?.startsWith("http") ? anuncio.url : `${API_BASE_URL}${anuncio.url || ""}`} alt={anuncio.nombre} className="h-25 w-full object-cover object-center sm:h-30" /><div className="p-4"><p className="mb-1.5 text-[10px] tracking-[.18em] text-[#a51c1c] uppercase">{anuncio.seccion}</p><h3 className="mb-2 font-[Fraunces,Georgia,serif] text-xl text-neutral-900">{anuncio.nombre}</h3>{anuncio.descripcion && <p className="mb-4 text-sm leading-6 text-neutral-600">{anuncio.descripcion}</p>}<button type="button" onClick={() => setAnuncioAbierto(anuncio)} className="inline-flex min-h-11 items-center bg-[#a51c1c] px-5 py-3 text-xs tracking-wide text-white uppercase hover:bg-[#111010]">Ver anuncio</button></div></article>)}</div>
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{anuncios.map((anuncio) => <article key={anuncio.id} className="overflow-hidden border border-neutral-200 bg-white shadow-sm"><img src={anuncio.url?.startsWith("http") ? anuncio.url : `${API_BASE_URL}${anuncio.url || ""}`} alt={anuncio.nombre} style={estiloEnfoque(anuncio)} className="h-25 w-full object-cover sm:h-30" /><div className="p-4"><p className="mb-1.5 text-[10px] tracking-[.18em] text-[#a51c1c] uppercase">{anuncio.seccion}</p><h3 className="mb-2 font-[Fraunces,Georgia,serif] text-xl text-neutral-900">{anuncio.nombre}</h3>{anuncio.descripcion && <p className="mb-4 text-sm leading-6 text-neutral-600">{anuncio.descripcion}</p>}<button type="button" onClick={() => setAnuncioAbierto(anuncio)} className="inline-flex min-h-11 items-center bg-[#a51c1c] px-5 py-3 text-xs tracking-wide text-white uppercase hover:bg-[#111010]">Ver anuncio</button></div></article>)}</div>
           </div>
         </section>}
         <AnuncioEmergente anuncio={anuncioAbierto} disponible={Boolean(anuncioAbierto && anuncios.some((item) => item.id === anuncioAbierto.id))} onClose={() => { try { sessionStorage.setItem("studio13-anuncio-cerrado", "true"); } catch { /* continúa */ } setAnuncioAbierto(null); }} />
@@ -312,17 +342,18 @@ const Inicio = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-[1.6fr_1fr_1fr] grid-rows-[480px_340px] gap-0.5">
+          <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr] lg:grid-rows-[480px_340px]">
             {categories.map((cat, i) => (
               <Link
                 key={cat.label}
-                to="/portafolio"
-                className={`relative overflow-hidden block no-underline bg-[#1a1818] group ${i === 0 ? "row-span-2" : ""}`}
+                to={cat.filtro ? `/portafolio?categoria=${encodeURIComponent(cat.filtro)}` : "/portafolio"}
+                className={`relative block h-[420px] overflow-hidden no-underline bg-[#1a1818] group sm:h-[360px] lg:h-auto ${i === 0 ? "lg:row-span-2" : ""}`}
               >
                 <ImagenRotativa imagenes={imagenesPorCategoria[cat.label]} etiqueta={cat.label} />
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-linear-to-t from-[rgba(12,11,11,0.7)] to-transparent">
+                {/* Degradado discreto solo en la franja del título. */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-linear-to-t from-[rgba(12,11,11,0.86)] via-[rgba(12,11,11,0.45)] to-transparent">
                   <p
-                    className={`font-[Fraunces,Georgia,serif] italic font-extralight text-white tracking-[0.04em] ${i === 0 ? "text-[2.2rem]" : "text-[1.4rem]"}`}
+                    className={`font-[Fraunces,Georgia,serif] italic font-extralight text-white tracking-[0.04em] ${i === 0 ? "text-[1.6rem] sm:text-[1.9rem] lg:text-[2.2rem]" : "text-[1rem] sm:text-[1.2rem] lg:text-[1.4rem]"}`}
                   >
                     {cat.label}
                   </p>

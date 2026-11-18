@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
+import { estiloEnfoque, normalizarEncuadre } from "../utils/encuadre.js";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, "");
 const seccionesOriginales = [
@@ -30,21 +32,25 @@ const validarImagenes = (data) => Array.isArray(data) ? data
     url: urlPublica(image.url),
     titulo: typeof image.nombre === "string" ? image.nombre : "",
     categoria: image.seccion.trim(),
+    ...normalizarEncuadre(image),
   })) : [];
 
 export default function Portafolio() {
+  const [searchParams] = useSearchParams();
+  const categoriaSolicitada = searchParams.get("categoria");
   const [imagenes, setImagenes] = useState([]);
-  const [active, setActive] = useState("Todos");
+  const [active, setActive] = useState(categoriaSolicitada || "Todos");
   const [lightbox, setLightbox] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
+  const parametroAplicado = useRef(categoriaSolicitada);
 
   useEffect(() => {
     const controller = new AbortController();
     setCargando(true);
     setError("");
-    fetch(`${API_BASE_URL}/api/imagenes`, { signal: controller.signal })
+    fetch(`${API_BASE_URL}/api/imagenes`, { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
         const body = await response.json().catch(() => null);
         if (!response.ok) throw new Error(body?.error || "No se pudo cargar el portafolio.");
@@ -86,6 +92,21 @@ export default function Portafolio() {
   }, [imagenes]);
   const fotos = useMemo(() => (active === "Todos" ? imagenes : imagenes.filter((image) => normalizarNombre(image.categoria) === normalizarNombre(active))), [active, imagenes]);
 
+  // Aplica el filtro recibido desde Inicio (?categoria=...) respetando el nombre real de la galería.
+  useEffect(() => {
+    if (!categoriaSolicitada) {
+      if (parametroAplicado.current) {
+        parametroAplicado.current = null;
+        setActive("Todos");
+      }
+      return;
+    }
+    if (parametroAplicado.current === categoriaSolicitada) return;
+    parametroAplicado.current = categoriaSolicitada;
+    const encontrada = secciones.find((name) => normalizarNombre(name) === normalizarNombre(categoriaSolicitada));
+    if (encontrada) setActive(encontrada);
+  }, [categoriaSolicitada, secciones]);
+
   useEffect(() => {
     if (active !== "Todos" && !secciones.some((name) => normalizarNombre(name) === normalizarNombre(active))) setActive("Todos");
   }, [active, secciones]);
@@ -114,7 +135,7 @@ export default function Portafolio() {
           {cargando ? <p className="t-body py-20 text-center text-[#77736f]">Cargando portafolio…</p>
             : error ? <div className="py-20 text-center"><p className="t-body mb-5">{error}</p><button type="button" onClick={() => setReload((value) => value + 1)} className="border border-[#a51c1c] px-5 py-3 font-['Inter'] text-xs tracking-widest text-[#a51c1c] hover:bg-[#a51c1c] hover:text-white">Reintentar</button></div>
               : fotos.length ? <div className="columns-[280px] gap-6">{fotos.map((photo) => <button key={photo.id} type="button" onClick={() => setLightbox(photo)} aria-label={`Ampliar ${photo.titulo || photo.categoria}`} className="group relative mb-6 block w-full break-inside-avoid cursor-zoom-in overflow-hidden border-0 bg-[#dedad4] p-0 text-left">
-                <img src={photo.url} alt={photo.titulo || photo.categoria} loading="lazy" className="block w-full object-cover opacity-[0.92] transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:opacity-100" />
+                <img src={photo.url} alt={photo.titulo || photo.categoria} loading="lazy" style={estiloEnfoque(photo)} className="block w-full object-cover opacity-[0.92] transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:opacity-100" />
                 <span className="absolute inset-x-0 bottom-0 bg-[linear-gradient(to_top,rgba(12,11,11,0.72)_0%,rgba(12,11,11,0.28)_70%,transparent_100%)] px-4 pb-4 pt-12 text-[0.6rem] tracking-[0.2em] text-white opacity-100 transition-opacity duration-300">
                   <span className="block font-['Inter'] uppercase">{photo.categoria}</span>
                   {photo.titulo && <span className="mt-1 block text-xs tracking-normal">{photo.titulo}</span>}
@@ -125,7 +146,7 @@ export default function Portafolio() {
 
         {lightbox && <div onClick={() => setLightbox(null)} className="fixed inset-0 z-200 flex cursor-zoom-out items-center justify-center bg-[rgba(12,11,11,0.97)]" role="dialog" aria-modal="true" aria-label={lightbox.titulo || lightbox.categoria}>
           <button type="button" onClick={() => setLightbox(null)} className="absolute right-8 top-7 cursor-pointer border-0 bg-transparent font-['Inter'] text-[0.65rem] tracking-[0.2em] text-[rgba(244,243,240,0.7)] uppercase">Cerrar ×</button>
-          <img src={lightbox.url} alt={lightbox.titulo || lightbox.categoria} onClick={(event) => event.stopPropagation()} className="block max-h-[90vh] max-w-[90vw] object-contain" />
+          <img src={lightbox.url} alt={lightbox.titulo || lightbox.categoria} onClick={(event) => event.stopPropagation()} style={estiloEnfoque(lightbox)} className="block max-h-[90vh] max-w-[90vw] object-contain" />
         </div>}
       </div>
     </Layout>

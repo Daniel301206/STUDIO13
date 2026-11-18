@@ -34,7 +34,7 @@
 .studio13-admin-content p { color: var(--color-gris-texto); font-size: 15px; line-height: 1.6; }
 .studio13-admin-content :is(label, td, input, select, textarea) { font-family: var(--font-sans) !important; }
 .studio13-admin-content label { color: #292929; font-size: 15px; }
-.studio13-admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.studio13-admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
 .studio13-admin-content select,
 .studio13-admin-content textarea { min-height: 44px; border: 1px solid #bfc1c3 !important; border-radius: 2px !important; background-color: #fff; color: #171717; font-size: 15px; }
 .studio13-admin-content :is(input, select, textarea):focus { border-color: var(--color-rojo) !important; outline: 0; box-shadow: 0 0 0 2px rgb(200 16 46 / 12%) !important; }
@@ -162,7 +162,6 @@
   .studio13-admin-content [class*="grid-cols-"]:has(> figure) { grid-template-columns: minmax(0, 1fr); }
   .studio13-admin-content [class*="sm:grid-cols-"] { grid-template-columns: minmax(0, 1fr) !important; }
   .studio13-admin-content main:has(> section[aria-label="Resumen del estudio"]) > section[aria-label="Resumen del estudio"] > div:last-child { grid-template-columns: minmax(0, 1fr); }
-  .studio13-admin-content main:has(> section[aria-label="Resumen del estudio"]) > section[aria-label="Resumen del estudio"] article:last-child { grid-column: auto !important; }
   .studio13-admin-content .overflow-x-auto { max-width: 100%; overflow-x: auto; }
   .studio13-admin-content .overflow-x-auto > table { min-width: 720px; }
   .studio13-admin-content table td,

@@ -31,7 +31,7 @@ router.delete("/campanias/:id", campaniaController.remove);
  *   post:
  *     tags: [Imágenes]
  *     summary: Crear una imagen
- *     description: Crea un registro por JSON o sube una imagen de galería desde multipart/form-data. Las imágenes de galería admiten archivos de hasta 30 MB y se redimensionan a un máximo de 1920 px de ancho y convierten a WebP calidad 80 antes de almacenarse.
+ *     description: Crea un registro por JSON o sube una imagen de galería desde multipart/form-data. Toda imagen de galería se publica automáticamente. Las imágenes de galería admiten archivos de hasta 30 MB y se redimensionan a un máximo de 1920 px de ancho y convierten a WebP calidad 80 antes de almacenarse.
  *     requestBody:
  *       required: true
  *       content:
@@ -52,8 +52,14 @@ router.delete("/campanias/:id", campaniaController.remove);
  *                 type: string
  *               orden:
  *                 type: integer
- *               activo:
- *                 type: boolean
+ *               enfoqueX:
+ *                 type: integer
+ *                 minimum: 0
+ *                 maximum: 100
+ *               enfoqueY:
+ *                 type: integer
+ *                 minimum: 0
+ *                 maximum: 100
  *         multipart/form-data:
  *           schema:
  *             type: object
@@ -63,12 +69,17 @@ router.delete("/campanias/:id", campaniaController.remove);
  *                 type: string
  *               seccion:
  *                 type: string
+ *               enfoqueX:
+ *                 type: integer
+ *                 minimum: 0
+ *                 maximum: 100
+ *               enfoqueY:
+ *                 type: integer
+ *                 minimum: 0
+ *                 maximum: 100
  *               imagen:
  *                 type: string
  *                 format: binary
- *               activo:
- *                 type: boolean
- *                 default: true
  *     responses:
  *       201:
  *         description: Imagen creada.

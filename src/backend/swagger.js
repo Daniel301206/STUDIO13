@@ -81,6 +81,8 @@ const swaggerSpec = swaggerJSDoc({
             descripcion: { type: "string", nullable: true },
             orden: { type: "integer", default: 0 },
             activo: { type: "boolean", default: true },
+            enfoqueX: { type: "integer", minimum: 0, maximum: 100, default: 50 },
+            enfoqueY: { type: "integer", minimum: 0, maximum: 100, default: 50 },
             createdAt: { type: "string", format: "date-time" },
             updatedAt: { type: "string", format: "date-time" },
           },
@@ -94,7 +96,8 @@ const swaggerSpec = swaggerJSDoc({
             seccion: { type: "string" },
             descripcion: { type: "string", nullable: true },
             orden: { type: "integer" },
-            activo: { type: "boolean" },
+            enfoqueX: { type: "integer", minimum: 0, maximum: 100 },
+            enfoqueY: { type: "integer", minimum: 0, maximum: 100 },
           },
         },
         GaleriaImagen: {

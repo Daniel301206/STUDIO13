@@ -11,7 +11,6 @@ const API_BASE_URL = (
 const recursos = [
   { key: "reservaciones", label: "Reservaciones", endpoint: "/api/reservaciones" },
   { key: "clientes", label: "Clientes", endpoint: "/api/clientes" },
-  { key: "servicios", label: "Servicios", endpoint: "/api/servicios" },
   { key: "paquetes", label: "Paquetes", endpoint: "/api/paquetes" },
   { key: "membresias", label: "Membresías", endpoint: "/api/planes-membresia" },
   { key: "galerias", label: "Galería", endpoint: "/api/galerias" },
@@ -20,7 +19,6 @@ const recursos = [
 const estadisticas = [
   { key: "reservaciones", label: "Reservaciones", note: "pendientes" },
   { key: "clientes", label: "Clientes", note: "En la base de clientes" },
-  { key: "servicios", label: "Servicios", note: "Registros en catálogo" },
   { key: "paquetes", label: "Paquetes", note: "Registros en catálogo" },
   { key: "membresias", label: "Membresías", note: "Planes registrados" },
 ];
@@ -262,10 +260,10 @@ function Inicio() {
               Resumen del estudio
             </h2>
           </div>
-          <div className="grid grid-cols-2 border border-neutral-200 bg-white sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 border border-neutral-200 bg-white sm:grid-cols-2 lg:grid-cols-4">
             {estadisticas.map((estadistica, index) => (
               <article
-                className={`min-h-28 border-b border-r border-neutral-200 px-4 py-4 sm:min-h-32 sm:px-5 sm:py-5 ${index % 2 === 1 ? "border-r-0 sm:border-r" : ""} ${index === estadisticas.length - 1 ? "col-span-2 border-r-0 sm:col-span-1 sm:border-r-0" : ""}`}
+                className={`min-h-28 border-b border-r border-neutral-200 px-4 py-4 sm:min-h-32 sm:px-5 sm:py-5 ${index % 2 === 1 ? "sm:border-r-0 lg:border-r" : ""} ${index === estadisticas.length - 1 ? "border-r-0 lg:border-r-0" : ""}`}
                 key={estadistica.key}
               >
                 <div className="mb-3 flex items-center justify-between text-[10px] text-neutral-400 sm:mb-4">

@@ -141,6 +141,17 @@ blockquote:not([class*="Fraunces"]),
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #c9c6c0; }
 
+/* Scrollbar del listado de gestión: visible y con contraste cuando desborda. */
+.galeria-gestion-lista {
+  scrollbar-width: thin;
+  scrollbar-color: #8a8682 #ecebe9;
+}
+.galeria-gestion-lista::-webkit-scrollbar { width: 10px; }
+.galeria-gestion-lista::-webkit-scrollbar-track { background: #ecebe9; }
+.galeria-gestion-lista::-webkit-scrollbar-thumb { border: 2px solid #ecebe9; border-radius: 999px; background: #8a8682; }
+.galeria-gestion-lista::-webkit-scrollbar-thumb:hover { background: #55524f; }
+
+/* El listado de anuncios de otras pantallas conserva su barra delgada original. */
 .galeria-imagenes-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgb(120 113 108 / 28%) transparent;
@@ -149,6 +160,111 @@ blockquote:not([class*="Fraunces"]),
 .galeria-imagenes-scroll::-webkit-scrollbar-track { background: transparent; }
 .galeria-imagenes-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: rgb(120 113 108 / 28%); }
 .galeria-imagenes-scroll::-webkit-scrollbar-thumb:hover { background: rgb(120 113 108 / 52%); }
+
+/* Gestión de imágenes: cadena de alturas shell → body → content → main → panel → listado.
+   Cada padre flex necesita min-height: 0 para poder encogerse hasta el viewport. */
+.studio13-admin-shell:has(.galeria-pagina-gestion) {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.studio13-admin-body:has(.galeria-pagina-gestion) {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+.studio13-admin-content:has(.galeria-pagina-gestion) {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+body:has(.galeria-pagina-gestion) {
+  overflow: hidden;
+}
+
+.galeria-pagina-gestion {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+}
+.galeria-gestion-panel {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+.galeria-gestion-lista {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+
+/* Controles compactos de la gestión de imágenes (contadores y filtros). */
+.studio13-admin-content .galeria-gestion-contadores article {
+  padding: 8px 12px;
+}
+.studio13-admin-content .galeria-gestion-contadores p:first-child {
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: .12em;
+}
+.studio13-admin-content .galeria-gestion-contadores p:last-child {
+  margin-top: 1px;
+  font-size: 20px;
+  line-height: 1.15;
+}
+.studio13-admin-content .galeria-gestion-filtros label {
+  gap: 3px;
+  font-size: 10px;
+  line-height: 1.25;
+  letter-spacing: .04em;
+}
+.studio13-admin-content .galeria-gestion-filtros :is(input, select) {
+  height: 34px;
+  min-height: 34px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  line-height: 1.3;
+}
+.studio13-admin-content input[type="range"] {
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  border: 0 !important;
+  background: transparent;
+  padding: 0;
+  accent-color: var(--color-rojo);
+  cursor: pointer;
+}
+
+/* En ventanas bajas se compacta el encabezado; el listado conserva su scroll interno
+   y la página sigue bloqueada. */
+@media (max-height: 700px) {
+  .studio13-admin-content .galeria-pagina-gestion {
+    padding-top: .75rem;
+    padding-bottom: .75rem;
+  }
+  .studio13-admin-content .galeria-pagina-gestion > div:first-child {
+    margin-bottom: .5rem;
+  }
+  .studio13-admin-content .galeria-pagina-gestion > div:first-child > div > p:first-child {
+    display: none;
+  }
+  .studio13-admin-content .galeria-gestion-contadores p:last-child {
+    font-size: 18px;
+  }
+}
 
 .portada-collage__foto {
   position: absolute;

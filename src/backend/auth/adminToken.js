@@ -41,6 +41,7 @@ export const createAdminToken = (admin, secret) => {
       sub: String(admin.id),
       email: admin.email,
       role: admin.role,
+      sv: admin.sessionVersion,
       iat: now,
       exp: now + TOKEN_LIFETIME_SECONDS,
     }),
@@ -76,6 +77,7 @@ export const verifyAdminToken = (token, secret) => {
       !claims.sub ||
       typeof claims.email !== "string" ||
       !isAdminRole(claims.role) ||
+      !Number.isInteger(claims.sv) ||
       !Number.isInteger(claims.exp) ||
       claims.exp <= Math.floor(Date.now() / 1000)
     ) {
@@ -85,7 +87,7 @@ export const verifyAdminToken = (token, secret) => {
     const id = Number(claims.sub);
     if (!Number.isInteger(id) || id <= 0) return null;
 
-    return { id, email: claims.email, role: claims.role };
+    return { id, email: claims.email, role: claims.role, sessionVersion: claims.sv };
   } catch {
     return null;
   }

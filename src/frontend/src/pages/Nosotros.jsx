@@ -1,6 +1,12 @@
 import { Link } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
 import studio13LogoWhite from "../assets/studio13_blanco.png";
+import fotoDetrasDelLente from "../assets/imagen_alquiler.jpg";
+
+// Importa aquí las tres fotografías pendientes cuando estén disponibles.
+// import fotoElEstudio from "../assets/foto-el-estudio.jpg";
+// import fotoHerramientas from "../assets/foto-herramientas.jpg";
+// import fotoPreparacion from "../assets/foto-preparacion.jpg";
 
 const milestones = [
   {
@@ -23,35 +29,43 @@ const milestones = [
 
 const studioPhotos = [
   {
-    src: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1000&h=700&fit=crop&auto=format&q=85",
+    id: "detras-del-lente",
+    //src: ,
     alt: "Fotógrafa trabajando en sesión",
     caption: "Detrás del lente",
   },
   {
-    src: "https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?w=800&h=1000&fit=crop&auto=format&q=85",
+    id: "el-estudio",
+    src: fotoDetrasDelLente, // fotoElEstudio
     alt: "Interior del estudio",
     caption: "El estudio",
   },
   {
-    src: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&h=600&fit=crop&auto=format&q=85",
+    id: "herramientas-de-trabajo",
+    src: null, // fotoHerramientas
     alt: "Equipo fotográfico",
     caption: "Herramientas de trabajo",
   },
   {
-    src: "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=800&h=600&fit=crop&auto=format&q=85",
+    id: "preparacion-de-sesion",
+    src: null, // fotoPreparacion
     alt: "Preparación de sesión",
     caption: "Cada detalle importa",
   },
 ];
 
+const tieneImagen = (src) => typeof src === "string" && src.trim().length > 0;
+
 export default function Nosotros() {
+  const fotoPrincipal = studioPhotos[0];
+
   return (
     <Layout>
       <div className="bg-white">
         {/* HERO */}
         <section className="relative h-[80vh] min-h-125 overflow-hidden bg-[#1a1818]">
           <img
-            src="https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1800&h=1000&fit=crop&auto=format&q=90"
+            //src={}
             alt="Fotógrafo en acción — Studio13"
             className="
             absolute
@@ -162,44 +176,48 @@ export default function Nosotros() {
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] md:grid-rows-[400px_280px] gap-0.5">
             {/* MAIN PHOTO */}
             <div className="md:row-span-2 overflow-hidden bg-[#2a2826]">
-              <img
-                src={studioPhotos[0].src}
-                alt={studioPhotos[0].alt}
-                className="
-                w-full
-                h-full
-                object-cover
-                block
-                opacity-[0.85]
-                transition-transform
-                duration-800
-                ease-out
-                hover:scale-[1.04]
-              "
-              />
-            </div>
-
-            {/* OTHER PHOTOS */}
-            {studioPhotos.slice(1).map((photo) => (
-              <div
-                key={photo.src}
-                className="overflow-hidden bg-[#2a2826] relative"
-              >
+              {fotoPrincipal && tieneImagen(fotoPrincipal.src) && (
                 <img
-                  src={photo.src}
-                  alt={photo.alt}
+                  src={fotoPrincipal.src}
+                  alt={fotoPrincipal.alt}
                   className="
                   w-full
                   h-full
                   object-cover
                   block
-                  opacity-[0.8]
+                  opacity-[0.85]
                   transition-transform
                   duration-800
                   ease-out
-                  hover:scale-[1.05]
+                  hover:scale-[1.04]
                 "
                 />
+              )}
+            </div>
+
+            {/* OTHER PHOTOS */}
+            {studioPhotos.slice(1).map((photo) => (
+              <div
+                key={photo.id}
+                className="overflow-hidden bg-[#2a2826] relative"
+              >
+                {tieneImagen(photo.src) && (
+                  <img
+                    src={photo.src}
+                    alt={photo.alt}
+                    className="
+                    w-full
+                    h-full
+                    object-cover
+                    block
+                    opacity-[0.8]
+                    transition-transform
+                    duration-800
+                    ease-out
+                    hover:scale-[1.05]
+                  "
+                  />
+                )}
 
                 <div className="absolute bottom-3 left-3">
                   <p className="font-['Inter'] font-light text-[0.6rem] tracking-[0.18em] uppercase text-[rgba(244,243,240,0.4)]">

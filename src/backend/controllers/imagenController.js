@@ -8,8 +8,8 @@ import {
   reportControllerError,
 } from "./_shared.js";
 
-const fields = ["nombre", "url", "publicId", "servicioId", "seccion", "descripcion", "orden", "activo"];
-const editableFields = ["nombre", "servicioId", "descripcion", "orden", "activo", "seccion"];
+const fields = ["nombre", "url", "publicId", "servicioId", "seccion", "descripcion", "orden", "enfoqueX", "enfoqueY"];
+const editableFields = ["nombre", "servicioId", "descripcion", "orden", "seccion", "enfoqueX", "enfoqueY"];
 const requiredFields = ["nombre", "url", "seccion"];
 const categoriasPortafolio = ["Corporativas", "Quinceañero", "Fotos Familiares", "Embarazo", "Bodas", "Eventos", "Exteriores", "Talleres"];
 const categoriasRetiradas = new Set(["Parejas", "Snacks Quick", "Snacks Queick", "Snacks Queik"].map(normalizarCategoria));
@@ -19,6 +19,13 @@ function normalizarCategoria(value) {
 }
 const categoriaPortafolio = (value) => categoriasPortafolio.find((categoria) => normalizarCategoria(categoria) === normalizarCategoria(value)) || null;
 const categoriaRetirada = (value) => categoriasRetiradas.has(normalizarCategoria(value));
+const nombresServicioCategoria = {
+  corporativas: ["corporativas", "corporativa"],
+  "fotos familiares": ["fotos familiares", "familia"],
+};
+const servicioCoincideConCategoria = (servicio, categoria) =>
+  (nombresServicioCategoria[normalizarCategoria(categoria)] || [normalizarCategoria(categoria)])
+    .includes(normalizarCategoria(servicio?.nombre));
 const optimizarImagen = (buffer) => sharp(buffer)
   .rotate()
   .resize({ width: 1920, withoutEnlargement: true })
@@ -75,6 +82,18 @@ const buscarReferencias = async (imagen) => {
   ].filter(Boolean);
 };
 
+const normalizarEnfoque = (payload) => {
+  const data = {};
+  for (const campo of ["enfoqueX", "enfoqueY"]) {
+    if (!Object.hasOwn(payload, campo)) continue;
+    let valor = payload[campo];
+    if (typeof valor === "string" && valor.trim()) valor = Number(valor);
+    if (!Number.isInteger(valor) || valor < 0 || valor > 100) throw new Error("El encuadre debe ser un porcentaje entre 0 y 100.");
+    data[campo] = valor;
+  }
+  return data;
+};
+
 const normalizarActualizacion = (payload) => {
   const data = pickDefined(payload, editableFields);
   if (Object.hasOwn(data, "seccion")) {
@@ -86,22 +105,19 @@ const normalizarActualizacion = (payload) => {
     data.nombre = data.nombre.trim();
   }
   if (Object.hasOwn(data, "servicioId")) {
-    if (typeof data.servicioId === "string" && data.servicioId.trim()) data.servicioId = Number(data.servicioId);
-    if (!Number.isInteger(data.servicioId) || data.servicioId < 1) throw new Error("Selecciona un servicio válido.");
+    if (data.servicioId === "" || data.servicioId === null) data.servicioId = null;
+    else if (typeof data.servicioId === "string") data.servicioId = Number(data.servicioId);
+    if (data.servicioId !== null && (!Number.isInteger(data.servicioId) || data.servicioId < 1)) throw new Error("Servicio no v\u00e1lido.");
   }
   if (Object.hasOwn(data, "descripcion")) {
     if (data.descripcion !== null && typeof data.descripcion !== "string") throw new Error("La descripción no es válida.");
     data.descripcion = typeof data.descripcion === "string" ? data.descripcion.trim() || null : null;
   }
-  if (Object.hasOwn(data, "activo")) {
-    if (data.activo === "true") data.activo = true;
-    if (data.activo === "false") data.activo = false;
-    if (typeof data.activo !== "boolean") throw new Error("El estado de publicación no es válido.");
-  }
   if (Object.hasOwn(data, "orden")) {
     if (typeof data.orden === "string" && data.orden.trim()) data.orden = Number(data.orden);
     if (!Number.isInteger(data.orden)) throw new Error("El orden debe ser un número entero.");
   }
+  Object.assign(data, normalizarEnfoque(data));
   return data;
 };
 
@@ -111,8 +127,14 @@ const validPayload = (payload, requireAll = false) =>
 
 const list = async (_req, res) => {
   try {
-    const imagenes = (await prisma.imagen.findMany({ where: { tipo: "GENERAL", activo: true }, orderBy: [{ orden: "asc" }, { id: "asc" }] }))
-      .filter((imagen) => !categoriaRetirada(imagen.seccion));
+    const imagenes = (await prisma.imagen.findMany({
+      where: { tipo: "GENERAL" },
+      include: { servicio: { select: { id: true, nombre: true, activo: true } } },
+      orderBy: [{ orden: "asc" }, { id: "asc" }],
+    }))
+      .filter((imagen) => !categoriaRetirada(imagen.seccion))
+      // Las imágenes de galería no admiten ocultamiento: las antiguas se publican al leerlas.
+      .map((imagen) => ({ ...imagen, activo: true }));
     res.set("Cache-Control", "no-store");
     return res.json(imagenes);
   } catch (error) {
@@ -135,10 +157,10 @@ const getById = async (req, res) => {
   if (!id) return res.status(400).json({ error: "El id debe ser un entero positivo." });
 
   try {
-    const imagen = await prisma.imagen.findFirst({ where: { id, tipo: "GENERAL", activo: true } });
+    const imagen = await prisma.imagen.findFirst({ where: { id, tipo: "GENERAL" } });
     if (!imagen || categoriaRetirada(imagen.seccion)) return res.status(404).json({ error: "Imagen no encontrada." });
     res.set("Cache-Control", "no-store");
-    return res.json(imagen);
+    return res.json({ ...imagen, activo: true });
   } catch (error) {
     return reportControllerError(res, "obtener la imagen", error);
   }
@@ -151,12 +173,16 @@ const create = async (req, res) => {
     if (!nombre || !seccion) return res.status(400).json({ error: "nombre y seccion son obligatorios para subir una imagen." });
     const categoria = categoriaPortafolio(seccion);
     if (!categoria) return res.status(400).json({ error: "Selecciona una categoría disponible del portafolio." });
-    const activo = req.body.activo === undefined || req.body.activo === "" || req.body.activo === "true"
-      ? true
-      : req.body.activo === "false"
-        ? false
-        : null;
-    if (activo === null) return res.status(400).json({ error: "activo debe ser verdadero o falso." });
+    const servicioId = req.body.servicioId ? Number(req.body.servicioId) : null;
+    const servicio = Number.isInteger(servicioId) && servicioId > 0
+      ? await prisma.servicio.findUnique({ where: { id: servicioId }, select: { id: true, nombre: true } })
+      : null;
+    if (req.body.servicioId && (!servicio || !servicioCoincideConCategoria(servicio, categoria))) {
+      return res.status(400).json({ error: "Selecciona un servicio vÃ¡lido para esta imagen." });
+    }
+    let enfoque;
+    try { enfoque = normalizarEnfoque(req.body); }
+    catch (error) { return res.status(400).json({ error: error.message }); }
 
     let imagenSubida;
     try {
@@ -168,8 +194,10 @@ const create = async (req, res) => {
           url: imagenSubida.secure_url,
           publicId: imagenSubida.public_id,
           seccion: categoria,
+          servicioId: servicio?.id ?? null,
           tipo: "GENERAL",
-          activo,
+          activo: true,
+          ...enfoque,
         },
       });
       return res.status(201).json(imagen);
@@ -187,6 +215,9 @@ const create = async (req, res) => {
   const categoria = categoriaPortafolio(data.seccion);
   if (!categoria) return res.status(400).json({ error: "Selecciona una categoría disponible del portafolio." });
   data.seccion = categoria;
+  data.activo = true;
+  try { Object.assign(data, normalizarEnfoque(data)); }
+  catch (error) { return res.status(400).json({ error: error.message }); }
 
   try {
     const imagen = await prisma.imagen.create({ data });
@@ -204,16 +235,26 @@ const update = async (req, res) => {
   try { data = normalizarActualizacion(req.body); }
   catch (error) { return res.status(400).json({ error: error.message }); }
   if (!Object.keys(data).length && !req.file) return res.status(400).json({ error: "No hay cambios para actualizar." });
+  // Las imágenes de galería siempre quedan publicadas; cualquier edición las reactiva.
+  data.activo = true;
   let imagenSubida;
   let registroActualizado = false;
   try {
     const imagenActual = await prisma.imagen.findFirst({ where: { id, tipo: "GENERAL" } });
     if (!imagenActual) return res.status(404).json({ error: "Imagen no encontrada." });
+    if (Object.hasOwn(data, "seccion") && !Object.hasOwn(data, "servicioId")) data.servicioId = null;
     if (Object.hasOwn(data, "seccion")) {
       const categoria = categoriaPortafolio(data.seccion);
       if (categoria) data.seccion = categoria;
       else if (categoriaRetirada(data.seccion) && normalizarCategoria(data.seccion) === normalizarCategoria(imagenActual.seccion)) data.seccion = imagenActual.seccion;
       else return res.status(400).json({ error: "Selecciona una categoría disponible. Las fotos antiguas conservan su categoría si no la cambias." });
+    }
+    if (data.servicioId) {
+      const servicio = await prisma.servicio.findUnique({ where: { id: data.servicioId }, select: { id: true, nombre: true } });
+      const categoria = data.seccion || imagenActual.seccion;
+      if (!servicio || !servicioCoincideConCategoria(servicio, categoria)) {
+        return res.status(400).json({ error: "El servicio seleccionado no corresponde a esta categorÃ­a." });
+      }
     }
     let referenciasAntiguoAsset = [];
     if (req.file) {
@@ -252,24 +293,18 @@ const remove = async (req, res) => {
   try {
     const imagen = await prisma.imagen.findFirst({ where: { id, tipo: "GENERAL" } });
     if (!imagen) return res.status(404).json({ error: "Imagen no encontrada." });
-    if (!imagen.publicId) return res.status(409).json({ error: "Esta imagen no tiene un identificador de almacenamiento verificable; se conservó el registro para evitar una eliminación incompleta." });
     const referencias = await buscarReferencias(imagen);
     if (referencias.length) return res.status(409).json({ error: "No se eliminó la imagen porque el recurso está compartido con " + referencias.join(", ") + "." });
-    const desactivar = await prisma.imagen.updateMany({ where: { id, tipo: "GENERAL" }, data: { activo: false } });
-    if (!desactivar.count) return res.status(404).json({ error: "Imagen no encontrada." });
-    try { await deleteImage(imagen.publicId); }
-    catch (error) {
-      console.error("[eliminar archivo de imagen]", error);
-      const imagenConservada = await prisma.imagen.findFirst({ where: { id, tipo: "GENERAL" } }).catch(() => null);
-      return res.status(502).json({ error: "El almacenamiento no confirmó la eliminación. El registro se conservó oculto para evitar mostrar una imagen cuyo estado es incierto; puedes reintentar o volver a publicarla.", retryable: true, ...(imagenConservada ? { image: imagenConservada } : {}) });
-    }
+    // La galería no usa estados ocultos: se retira el registro y luego se limpia el archivo.
+    const eliminado = await prisma.imagen.deleteMany({ where: { id, tipo: "GENERAL" } });
+    if (!eliminado.count) return res.status(404).json({ error: "Imagen no encontrada." });
+    if (!imagen.publicId) return res.status(204).end();
     try {
-      await prisma.imagen.deleteMany({ where: { id, tipo: "GENERAL" } });
+      await deleteImage(imagen.publicId);
       return res.status(204).end();
     } catch (error) {
-      console.error("[eliminar registro tras borrar archivo]", error);
-      const imagenConservada = await prisma.imagen.findFirst({ where: { id, tipo: "GENERAL" } }).catch(() => null);
-      return res.status(503).json({ error: "El archivo se eliminó, pero no se pudo retirar el registro. Se conservó oculto para permitir reintentar.", retryable: true, ...(imagenConservada ? { image: imagenConservada } : {}) });
+      console.error("[eliminar archivo de imagen]", error);
+      return res.json({ eliminada: true, cleanupWarning: "La imagen se retiró del portafolio, pero el almacenamiento no confirmó la eliminación del archivo." });
     }
   } catch (error) {
     return reportControllerError(res, "eliminar la imagen", error);

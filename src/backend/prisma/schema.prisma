@@ -8,13 +8,27 @@ datasource db {
 }
 
 model AdminUser {
-  id           Int      @id @default(autoincrement())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         AdminRole
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                    Int                       @id @default(autoincrement())
+  name                  String
+  email                 String                    @unique
+  passwordHash          String
+  role                  AdminRole
+  sessionVersion        Int                       @default(0)
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  passwordResetTokens   AdminPasswordResetToken[]
+}
+
+model AdminPasswordResetToken {
+  id          Int       @id @default(autoincrement())
+  tokenHash   String    @unique
+  adminUserId Int
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime  @db.Timestamptz(3)
+  usedAt      DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([adminUserId])
 }
 
 enum AdminRole {
@@ -35,6 +49,8 @@ model Imagen {
   tipo        TipoImagen @default(GENERAL)
   orden       Int        @default(0)
   activo      Boolean    @default(true)
+  enfoqueX    Int        @default(50)
+  enfoqueY    Int        @default(50)
   formularioEspecial Boolean @default(false)
   mostrarWhatsapp    Boolean @default(false)
   visibleHasta DateTime? @db.Timestamptz(3)

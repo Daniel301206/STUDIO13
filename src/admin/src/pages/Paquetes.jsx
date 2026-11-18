@@ -9,7 +9,7 @@ const secciones = [
   { id: "ALQUILER", nombre: "Alquiler" },
   { id: "TARIFA", nombre: "Tarifas" },
 ];
-const tiposServicio = ["Corporativas", "Quinceañero", "Fotos Familiares", "Embarazo", "Parejas", "Snacks Queik", "Eventos", "Exteriores", "Talleres"];
+const tiposServicio = ["Corporativas", "Quinceañero", "Fotos Familiares", "Embarazo", "Bodas", "Eventos", "Exteriores", "Talleres"];
 const campo = "w-full border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-[#a51c1c]";
 const etiqueta = "grid gap-1.5 text-xs font-semibold! text-neutral-700";
 
@@ -193,7 +193,6 @@ export default function Paquetes() {
             <div className="flex items-end"><label className="flex items-center gap-3 text-xs font-semibold! text-neutral-700"><input type="checkbox" checked={borrador.activo} onChange={(evento) => setBorrador((actual) => ({ ...actual, activo: evento.target.checked }))} className="accent-[#a51c1c]" />Publicado en el sitio público</label></div>
           </div>
           <label className={etiqueta}>{seccionActiva === "TARIFA" ? "Detalles de la tarifa" : "Beneficios incluidos"} <span className="font-normal! text-neutral-500">{seccionActiva === "SESION" ? "Escribe un beneficio por l\u00ednea." : "Escribe un detalle por l\u00ednea."}</span><textarea className={campo} rows={3} value={borrador.beneficios} onChange={(evento) => setBorrador((actual) => ({ ...actual, beneficios: evento.target.value }))} /></label>
-          <fieldset className="grid gap-2 border-0 p-0"><legend className="mb-1 text-xs font-semibold! text-neutral-700">Imagen de la biblioteca</legend>{imagenes.length ? <div className="grid max-h-40 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">{imagenes.map((imagen) => <button key={imagen.id} type="button" onClick={() => setBorrador((actual) => ({ ...actual, imagenId: actual.imagenId === String(imagen.id) ? "" : String(imagen.id) }))} className={`overflow-hidden border text-left ${borrador.imagenId === String(imagen.id) ? "border-[#a51c1c] ring-2 ring-[#a51c1c]/20" : "border-neutral-200"}`}><img src={imagen.url} alt={imagen.nombre} className="h-16 w-full object-cover" /><span className="block truncate px-2 py-1 text-xs text-neutral-700">{imagen.nombre}</span></button>)}</div> : <p className="m-0 text-xs text-neutral-500">{"No hay im\u00e1genes disponibles en la biblioteca."}</p>}</fieldset>
           {errorOperacion && <p className="m-0 text-sm text-[#a51c1c]" role="alert">{errorOperacion}</p>}
           <div className="sticky bottom-0 z-10 -mx-4 mt-1 flex justify-end gap-2 border-t border-neutral-200 bg-white px-4 pt-2 pb-1 sm:-mx-5 sm:px-5"><button type="button" disabled={guardando} onClick={() => setModalAbierto(false)} className="border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold! text-neutral-700">Cancelar</button><button type="submit" disabled={guardando} className="border border-[#a51c1c] bg-[#a51c1c] px-3 py-2 text-xs font-semibold! text-white disabled:opacity-60">{guardando ? "Guardando…" : "Guardar"}</button></div>
         </form>

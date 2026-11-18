@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import IniciarSesion from './pages/Login.jsx';
+import RecuperarContrasena from './pages/RecuperarContrasena.jsx';
 import Inicio from './pages/Inicio.jsx';
 import AdminLayout from './pages/Layout/AdminLayout.jsx';
 import Clientes from './pages/Cliente.jsx';
@@ -41,6 +42,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/iniciar-sesion" element={<IniciarSesion />} />
+        <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+        <Route path="/restablecer-contrasena" element={<RecuperarContrasena />} />
         <Route path="/Inicio" element={<RutaAdministrativa roles={soloDuena}><AdminLayout><Inicio /></AdminLayout></RutaAdministrativa>} />
         <Route path="/admin/Clientes" element={<RutaAdministrativa roles={soloDuena}><AdminLayout><Clientes /></AdminLayout></RutaAdministrativa>} />
         <Route path="/admin/Reservaciones" element={<RutaAdministrativa roles={soloDuena}><AdminLayout><Reservaciones /></AdminLayout></RutaAdministrativa>} />

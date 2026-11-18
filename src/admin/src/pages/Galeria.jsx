@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL, adminHeaders, mensajeError, redirigirSiNoAutorizado } from "./useAdminCollection.js";
 import { comprimirImagenParaSubida } from "./ImageCompretion.js";
+import { estiloEnfoque, normalizarEncuadre, normalizarEnfoque } from "../utils/encuadre.js";
 
 const categorias = [
   "Corporativas",
@@ -14,6 +15,14 @@ const categorias = [
   "Talleres",
 ];
 const normalizarCategoria = (value) => value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
+const nombresServicioCategoria = {
+  Corporativas: ["Corporativas", "Corporativa"],
+  "Fotos Familiares": ["Fotos Familiares", "Familia"],
+};
+const buscarServicioCategoria = (servicios, categoria) => {
+  const nombres = nombresServicioCategoria[categoria] || [categoria];
+  return servicios.find((servicio) => nombres.some((nombre) => normalizarCategoria(servicio.nombre || "") === normalizarCategoria(nombre)));
+};
 const categoriasRetiradas = new Set(["parejas", "snacks quick", "snacks queick", "snacks queik"]);
 const categoriaRetirada = (value) => categoriasRetiradas.has(normalizarCategoria(value || ""));
 const tiposPermitidos = ["image/jpeg", "image/png", "image/webp"];
@@ -24,6 +33,7 @@ export default function Galeria() {
   const navigate = useNavigate();
   const [categoriaActiva, setCategoriaActiva] = useState(categorias[0]);
   const [imagenes, setImagenes] = useState([]);
+  const [servicios, setServicios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [subiendo, setSubiendo] = useState(false);
   const [errorOperacion, setErrorOperacion] = useState("");
@@ -36,7 +46,6 @@ export default function Galeria() {
   const [busquedaImagen, setBusquedaImagen] = useState("");
   const [pestanaActiva, setPestanaActiva] = useState("subir");
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
-  const [filtroEstado, setFiltroEstado] = useState("todos");
   const [ordenFecha, setOrdenFecha] = useState("desc");
   const [imagenEditando, setImagenEditando] = useState(null);
   const [borradorEdicion, setBorradorEdicion] = useState(null);
@@ -59,11 +68,24 @@ export default function Galeria() {
         if (!response.ok) throw new Error(body?.error || "No se pudieron cargar las imágenes.");
         if (!Array.isArray(body)) throw new Error("El servidor devolvió un formato de imágenes no válido.");
         return body.filter((image) => image && Number.isInteger(image.id) && typeof image.url === "string" && typeof image.seccion === "string")
-          .map((image) => ({ ...image, titulo: image.nombre, categoria: image.seccion, preview: urlImagen(image.url), guardada: true }));
+          .map((image) => ({ ...image, ...normalizarEncuadre(image), titulo: image.nombre, categoria: image.seccion, preview: urlImagen(image.url), guardada: true }));
       })
       .then((body) => { if (!controller.signal.aborted) setImagenes(body); })
       .catch((reason) => { if (!controller.signal.aborted) setErrorOperacion(mensajeError(reason)); })
       .finally(() => { if (!controller.signal.aborted) setCargando(false); });
+    return () => controller.abort();
+  }, [navigate]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${API_BASE_URL}/api/admin/servicios`, { signal: controller.signal, headers: adminHeaders() })
+      .then(async (response) => {
+        const body = await response.json().catch(() => null);
+        redirigirSiNoAutorizado(response, navigate);
+        if (!response.ok || !Array.isArray(body)) throw new Error(body?.error || "No se pudieron cargar los servicios.");
+        if (!controller.signal.aborted) setServicios(body);
+      })
+      .catch((reason) => { if (!controller.signal.aborted) setErrorOperacion(mensajeError(reason)); });
     return () => controller.abort();
   }, [navigate]);
 
@@ -83,7 +105,7 @@ export default function Galeria() {
     const archivosAceptados = permitidos.slice(0, espaciosDisponibles);
     const excedentes = permitidos.length - archivosAceptados.length;
     const nuevos = archivosAceptados
-      .map((archivo) => ({ id: `${archivo.name}-${archivo.lastModified}-${crypto.randomUUID()}`, nombre: archivo.name.replace(/\.[^.]+$/, "").slice(0, 120), titulo: "", archivo, categoria: categoriaActiva, preview: URL.createObjectURL(archivo), guardada: false, activo: true }));
+      .map((archivo) => ({ id: `${archivo.name}-${archivo.lastModified}-${crypto.randomUUID()}`, nombre: archivo.name.replace(/\.[^.]+$/, "").slice(0, 120), titulo: "", archivo, categoria: categoriaActiva, preview: URL.createObjectURL(archivo), guardada: false, ...normalizarEncuadre({}) }));
     const avisos = [];
     if (permitidos.length < seleccion.length) avisos.push("Solo se aceptan JPG, PNG o WEBP.");
     if (excedentes > 0) avisos.push(`Cada servicio admite hasta ${MAX_IMAGENES_POR_CATEGORIA} imágenes. Se omitieron ${excedentes} archivo(s) porque quedan ${espaciosDisponibles} espacio(s).`);
@@ -114,9 +136,7 @@ export default function Galeria() {
   const imagenesFiltradas = imagenesGuardadas
     .filter((imagen) => `${imagen.titulo} ${imagen.nombre}`.toLocaleLowerCase().includes(busquedaImagen.trim().toLocaleLowerCase()))
     .filter((imagen) => filtroCategoria === "todas" || imagen.categoria === filtroCategoria)
-    .filter((imagen) => filtroEstado === "todos" || (filtroEstado === "publicadas" ? imagen.activo !== false : imagen.activo === false))
     .sort((a, b) => (ordenFecha === "desc" ? 1 : -1) * (new Date(a.createdAt || 0) - new Date(b.createdAt || 0)));
-  const imagenesPublicadas = imagenesGuardadas.filter((imagen) => imagen.activo !== false).length;
 
   const publicarImagenes = async () => {
     const pendientes = imagenes.filter((imagen) => imagen.categoria === categoriaActiva && !imagen.guardada);
@@ -124,6 +144,7 @@ export default function Galeria() {
     setSubiendo(true);
     setErrorOperacion("");
     setMensajeExito("");
+    const servicioCategoria = buscarServicioCategoria(servicios, categoriaActiva);
     let subidas = 0;
     try {
       for (const imagen of pendientes) {
@@ -132,11 +153,14 @@ export default function Galeria() {
         data.append("imagen", archivoComprimido, archivoComprimido.name);
         data.append("nombre", imagen.titulo.trim() || imagen.nombre);
         data.append("seccion", categoriaActiva);
+        data.append("enfoqueX", String(normalizarEnfoque(imagen.enfoqueX)));
+        data.append("enfoqueY", String(normalizarEnfoque(imagen.enfoqueY)));
+        if (servicioCategoria) data.append("servicioId", String(servicioCategoria.id));
         const response = await fetch(`${API_BASE_URL}/api/admin/imagenes`, { method: "POST", headers: adminHeaders(), body: data });
         const body = await response.json().catch(() => ({}));
         redirigirSiNoAutorizado(response, navigate);
         if (!response.ok) throw new Error(body.error || `No se pudo subir ${imagen.nombre}.`);
-        setImagenes((current) => current.map((item) => item.id === imagen.id ? { ...body, titulo: body.nombre, categoria: body.seccion, preview: urlImagen(body.url), guardada: true } : item));
+        setImagenes((current) => current.map((item) => item.id === imagen.id ? { ...body, ...normalizarEncuadre(body), titulo: body.nombre, categoria: body.seccion, preview: urlImagen(body.url), guardada: true } : item));
         setTituloImagen(body.nombre);
         setImagenTituloId(body.id);
         URL.revokeObjectURL(imagen.preview);
@@ -157,7 +181,7 @@ export default function Galeria() {
 
   const abrirEdicion = (imagen) => {
     setImagenEditando(imagen);
-    setBorradorEdicion({ nombre: imagen.nombre || imagen.titulo || "", descripcion: imagen.descripcion || "", seccion: imagen.seccion || imagen.categoria || categorias[0], activo: imagen.activo !== false });
+    setBorradorEdicion({ nombre: imagen.nombre || imagen.titulo || "", descripcion: imagen.descripcion || "", seccion: imagen.seccion || imagen.categoria || categorias[0], ...normalizarEncuadre(imagen) });
     setArchivoReemplazo(null);
     setPreviewReemplazo("");
     setErrorOperacion("");
@@ -191,6 +215,7 @@ export default function Galeria() {
     }
     const categoriaAnterior = imagenEditando.categoria || imagenEditando.seccion;
     const categoriaNueva = borradorEdicion.seccion.trim();
+    const servicioCategoriaNueva = buscarServicioCategoria(servicios, categoriaNueva);
     const imagenesEnCategoriaDestino = imagenes.filter((imagen) => imagen.guardada && imagen.categoria === categoriaNueva && imagen.id !== imagenEditando.id).length;
     if (categoriaNueva !== categoriaAnterior && imagenesEnCategoriaDestino >= MAX_IMAGENES_POR_CATEGORIA) {
       setErrorOperacion(`El servicio ${categoriaNueva} ya tiene el máximo de ${MAX_IMAGENES_POR_CATEGORIA} imágenes.`);
@@ -200,7 +225,7 @@ export default function Galeria() {
     setErrorOperacion("");
     setMensajeExito("");
     try {
-      const datos = { nombre: borradorEdicion.nombre.trim(), seccion: borradorEdicion.seccion.trim(), activo: borradorEdicion.activo };
+      const datos = { nombre: borradorEdicion.nombre.trim(), seccion: borradorEdicion.seccion.trim(), servicioId: servicioCategoriaNueva?.id ?? null, enfoqueX: normalizarEnfoque(borradorEdicion.enfoqueX), enfoqueY: normalizarEnfoque(borradorEdicion.enfoqueY) };
       let headers;
       let body;
       if (archivoReemplazo) {
@@ -217,7 +242,7 @@ export default function Galeria() {
       const resultado = await response.json().catch(() => ({}));
       redirigirSiNoAutorizado(response, navigate);
       if (!response.ok) throw new Error(resultado.error || "No se pudo actualizar la imagen.");
-      const imagenActualizada = { ...resultado, titulo: resultado.nombre, categoria: resultado.seccion, preview: urlImagen(resultado.url), guardada: true };
+      const imagenActualizada = { ...resultado, ...normalizarEncuadre(resultado), titulo: resultado.nombre, categoria: resultado.seccion, preview: urlImagen(resultado.url), guardada: true };
       setImagenes((actuales) => actuales.map((item) => item.id === imagenEditando.id ? imagenActualizada : item));
       setMensajeExito("Imagen actualizada correctamente.");
       if (resultado.cleanupWarning) setErrorOperacion(resultado.cleanupWarning);
@@ -249,7 +274,8 @@ export default function Galeria() {
         throw new Error(resultado.error || "No se pudo eliminar la imagen.");
       }
       setImagenes((actuales) => actuales.filter((item) => item.id !== imagenEliminando.id));
-      setMensajeExito("Imagen eliminada de Cloudinary, la base de datos y el portafolio público.");
+      setMensajeExito("Imagen eliminada del portafolio público.");
+      if (resultado.cleanupWarning) setErrorOperacion(resultado.cleanupWarning);
       setImagenEliminando(null);
     } catch (reason) {
       setErrorOperacion(mensajeError(reason));
@@ -260,12 +286,12 @@ export default function Galeria() {
   };
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-350 px-5 py-8 sm:px-7 md:px-10 md:py-10 xl:px-12">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <main className={`mx-auto w-full max-w-350 px-5 py-8 sm:px-7 md:px-10 md:py-10 xl:px-12 ${pestanaActiva === "gestionar" ? "galeria-pagina-gestion" : "min-h-screen"}`}>
+      <div className="mb-5 flex shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-2 text-[10px] font-semibold! tracking-[.2em] text-neutral-500 uppercase sm:text-xs">Contenido del sitio</p>
           <h1 className="m-0 font-[Georgia] text-3xl font-normal! text-neutral-900 sm:text-4xl">Galería</h1>
-          <p className="mb-0 mt-2 max-w-xl text-sm leading-6 text-neutral-500">Organiza las imágenes por categoría y elige cuáles aparecerán en la página pública.</p>
+          <p className="mb-0 mt-2 max-w-xl text-sm leading-6 text-neutral-500">Organiza las imágenes de tu portafolio por categoría.</p>
         </div>
         <span className="border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-semibold! tracking-wide text-green-800 uppercase">Conectado al portafolio</span>
       </div>
@@ -273,7 +299,7 @@ export default function Galeria() {
       {errorOperacion && <p className="mb-5 border border-red-200 bg-red-50 p-4 text-sm text-[#a51c1c]" role="alert">{errorOperacion}</p>}
       {mensajeExito && <div className="fixed right-5 top-5 z-70 flex w-[min(28rem,calc(100vw-2.5rem))] items-start gap-3 border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-800 shadow-lg" role="status" aria-live="polite"><span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-700 text-xs font-bold! text-white">✓</span><p className="m-0 flex-1 leading-6">{mensajeExito}</p><button type="button" onClick={() => setMensajeExito("")} aria-label="Cerrar notificación" className="border-0 bg-transparent px-1 text-lg leading-5 text-green-800 hover:text-green-950">×</button></div>}
 
-      <div className="mb-6 flex border-b border-neutral-200" role="tablist" aria-label="Secciones de la galería">
+      <div className="mb-4 flex shrink-0 border-b border-neutral-200" role="tablist" aria-label="Secciones de la galería">
         {[{ id: "subir", label: "Subir imagen" }, { id: "gestionar", label: "Gestión de imágenes" }].map((tab) => <button key={tab.id} id={`galeria-tab-${tab.id}`} type="button" role="tab" aria-selected={pestanaActiva === tab.id} aria-controls={`galeria-panel-${tab.id}`} onClick={() => setPestanaActiva(tab.id)} className={`border-0 border-b-2 px-5 py-3 text-xs font-semibold! tracking-wide transition-colors ${pestanaActiva === tab.id ? "border-[#a51c1c] text-[#a51c1c]" : "border-transparent bg-transparent text-neutral-500 hover:text-neutral-900"}`}>{tab.label}</button>)}
       </div>
 
@@ -328,33 +354,50 @@ export default function Galeria() {
         </div>
       </section>}
 
-      {pestanaActiva === "gestionar" && <section id="galeria-panel-gestionar" role="tabpanel" aria-labelledby="galeria-tab-gestionar" className="mb-7">
-        <div className="mb-6"><h2 className="m-0 font-[Georgia] text-2xl font-normal! text-neutral-900">Gestión de imágenes</h2><p className="mb-0 mt-2 text-sm text-neutral-500">Administra las imágenes de tu portafolio desde un solo lugar.</p></div>
-        <div className="mb-6 grid gap-3 sm:grid-cols-2">
-          {[{ label: "Total de imágenes", value: imagenesGuardadas.length }, { label: "Imágenes publicadas", value: imagenesPublicadas }].map((item) => <article key={item.label} className="border border-neutral-200 bg-white p-4"><p className="m-0 text-[10px] font-semibold! tracking-[.16em] text-neutral-500 uppercase">{item.label}</p><p className="mb-0 mt-2 font-[Georgia] text-3xl text-neutral-900">{item.value}</p></article>)}
+      {pestanaActiva === "gestionar" && <section id="galeria-panel-gestionar" role="tabpanel" aria-labelledby="galeria-tab-gestionar" className="galeria-gestion-panel mb-0 flex min-h-0 flex-1 flex-col">
+        <div className="galeria-gestion-contadores mb-2 shrink-0">
+          <article className="border border-neutral-200 bg-white p-2.5 sm:px-3"><p className="m-0 text-[10px] font-semibold! tracking-[.16em] text-neutral-500 uppercase">Total de imágenes</p><p className="mb-0 mt-2 font-[Georgia] text-3xl text-neutral-900">{imagenesGuardadas.length}</p></article>
         </div>
-        <div className="mb-5 grid gap-3 border border-neutral-200 bg-white p-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="galeria-gestion-filtros mb-2 grid shrink-0 grid-cols-1 gap-2 border border-neutral-200 bg-white p-2.5 sm:grid-cols-3">
           <label className="grid gap-1.5 text-[10px] font-semibold! tracking-wide text-neutral-500 uppercase">Buscar por nombre<input type="search" value={busquedaImagen} onChange={(evento) => setBusquedaImagen(evento.target.value)} placeholder="Nombre o título" className="w-full border border-neutral-300 bg-white px-3 py-2.5 text-xs font-normal! text-neutral-800 outline-none placeholder:text-neutral-400 focus:border-[#a51c1c]" /></label>
           <label className="grid gap-1.5 text-[10px] font-semibold! tracking-wide text-neutral-500 uppercase">Categoría<select value={filtroCategoria} onChange={(evento) => setFiltroCategoria(evento.target.value)} className="w-full border border-neutral-300 bg-white px-3 py-2.5 text-xs font-normal! text-neutral-800 outline-none focus:border-[#a51c1c]"><option value="todas">Todas las categorías</option>{categoriasDisponibles.map((categoria) => <option key={categoria} value={categoria}>{categoria}</option>)}</select></label>
-          <label className="grid gap-1.5 text-[10px] font-semibold! tracking-wide text-neutral-500 uppercase">Estado<select value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value)} className="w-full border border-neutral-300 bg-white px-3 py-2.5 text-xs font-normal! text-neutral-800 outline-none focus:border-[#a51c1c]"><option value="todos">Todos los estados</option><option value="publicadas">Publicadas</option><option value="ocultas">Ocultas</option></select></label>
           <label className="grid gap-1.5 text-[10px] font-semibold! tracking-wide text-neutral-500 uppercase">Fecha de subida<select value={ordenFecha} onChange={(evento) => setOrdenFecha(evento.target.value)} className="w-full border border-neutral-300 bg-white px-3 py-2.5 text-xs font-normal! text-neutral-800 outline-none focus:border-[#a51c1c]"><option value="desc">Más recientes primero</option><option value="asc">Más antiguas primero</option></select></label>
         </div>
-        {cargando ? <p className="border border-neutral-200 bg-white py-16 text-center text-sm text-neutral-500">Cargando imágenes...</p> : imagenesFiltradas.length ? <div className="galeria-imagenes-scroll grid max-h-[70vh] grid-cols-1 gap-4 overflow-y-auto pr-2 sm:grid-cols-2 lg:grid-cols-4">{imagenesFiltradas.map((imagen) => <article key={imagen.id} className="overflow-hidden border border-neutral-200 bg-white">
-          <img src={imagen.preview} alt={imagen.nombre} className="aspect-4/3 w-full bg-neutral-100 object-cover" />
-          <div className="p-4"><div className="mb-2 flex items-start justify-between gap-2"><h3 className="m-0 truncate text-sm font-semibold! text-neutral-900" title={imagen.nombre}>{imagen.nombre}</h3><span className={"shrink-0 border px-2 py-1 text-[9px] font-semibold! uppercase " + (imagen.activo !== false ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-neutral-300 bg-neutral-100 text-neutral-600")}>{imagen.activo !== false ? "Publicada" : "Oculta"}</span></div>
-            {imagen.descripcion && <p className="mb-2 line-clamp-2 text-xs leading-5 text-neutral-600">{imagen.descripcion}</p>}
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-[10px] text-neutral-500"><span>{imagen.categoria}</span><time dateTime={imagen.createdAt}>{imagen.createdAt ? new Intl.DateTimeFormat("es-PE", { dateStyle: "medium" }).format(new Date(imagen.createdAt)) : "Fecha no disponible"}</time></div>
-            <div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => abrirEdicion(imagen)} className="border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold! text-neutral-700 hover:border-[#a51c1c] hover:text-[#a51c1c]">Editar</button><button type="button" onClick={() => { setImagenEliminando(imagen); setErrorOperacion(""); }} className="border border-red-200 bg-white px-3 py-2 text-xs font-semibold! text-[#a51c1c] hover:bg-red-50">Eliminar</button></div>
+        {cargando ? <p className="border border-neutral-200 bg-white py-16 text-center text-sm text-neutral-500">Cargando imágenes...</p> : imagenesFiltradas.length ? <div className="galeria-gestion-lista flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pr-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a51c1c]" role="region" aria-label="Listado de imágenes" tabIndex={0}><div className="grid shrink-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 lg:grid-cols-4">{imagenesFiltradas.map((imagen) => <article key={imagen.id} className="flex flex-col overflow-hidden border border-neutral-200 bg-white">
+          <img src={imagen.preview} alt={imagen.nombre} style={estiloEnfoque(imagen)} className="h-40 w-full shrink-0 bg-neutral-100 object-cover sm:h-44" />
+          <div className="flex flex-1 flex-col p-3"><div className="mb-1.5"><h3 className="m-0 min-w-0 truncate text-sm font-semibold! text-neutral-900" title={imagen.nombre}>{imagen.nombre}</h3></div>
+            {imagen.descripcion && <p className="mb-1.5 line-clamp-1 text-xs leading-4 text-neutral-600">{imagen.descripcion}</p>}
+            <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px] text-neutral-500"><span>{imagen.categoria}</span><time dateTime={imagen.createdAt}>{imagen.createdAt ? new Intl.DateTimeFormat("es-PE", { dateStyle: "medium" }).format(new Date(imagen.createdAt)) : "Fecha no disponible"}</time></div>
+            <div className="mt-auto grid grid-cols-2 gap-2"><button type="button" onClick={() => abrirEdicion(imagen)} className="border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold! text-neutral-700 hover:border-[#a51c1c] hover:text-[#a51c1c]">Editar</button><button type="button" onClick={() => { setImagenEliminando(imagen); setErrorOperacion(""); }} className="border border-red-200 bg-white px-3 py-2 text-xs font-semibold! text-[#a51c1c] hover:bg-red-50">Eliminar</button></div>
           </div>
-        </article>)}</div> : <div className="border border-dashed border-neutral-300 bg-white px-5 py-16 text-center"><p className="mb-1 text-sm font-semibold! text-neutral-700">{imagenesGuardadas.length ? "No se encontraron imágenes" : "Todavía no hay imágenes guardadas"}</p><p className="m-0 text-xs text-neutral-500">{imagenesGuardadas.length ? "Prueba con otros filtros de búsqueda." : "Las imágenes que subas aparecerán aquí."}</p></div>}
+        </article>)}</div></div> : <div className="border border-dashed border-neutral-300 bg-white px-5 py-16 text-center"><p className="mb-1 text-sm font-semibold! text-neutral-700">{imagenesGuardadas.length ? "No se encontraron imágenes" : "Todavía no hay imágenes guardadas"}</p><p className="m-0 text-xs text-neutral-500">{imagenesGuardadas.length ? "Prueba con otros filtros de búsqueda." : "Las imágenes que subas aparecerán aquí."}</p></div>}
       </section>}
 
       {imagenEditando && borradorEdicion && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 p-4" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarEdicion(); }}><form role="dialog" aria-modal="true" aria-labelledby="editar-imagen-titulo" onSubmit={guardarEdicion} className="my-auto max-h-[92vh] w-full max-w-2xl overflow-y-auto border border-neutral-300 bg-white p-5 shadow-2xl sm:p-7"><div className="mb-5 flex items-start justify-between gap-4"><div><p className="mb-1 text-[10px] font-semibold! tracking-[.18em] text-[#a51c1c] uppercase">Gestión de imágenes</p><h2 id="editar-imagen-titulo" className="m-0 font-[Georgia] text-2xl font-normal! text-neutral-900">Editar imagen</h2></div><button type="button" onClick={cerrarEdicion} disabled={guardandoEdicion} className="border border-neutral-300 px-3 py-2 text-xs text-neutral-700">Cerrar</button></div>
         {errorOperacion && <p className="mb-4 border border-red-200 bg-red-50 p-3 text-xs text-[#a51c1c]" role="alert">{errorOperacion}</p>}
-        <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"><div><img src={previewReemplazo || imagenEditando.preview} alt={borradorEdicion.nombre} className="aspect-square w-full border border-neutral-200 bg-neutral-100 object-cover" /><label className="mt-3 block text-xs font-semibold! text-neutral-700">Reemplazar archivo<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(evento) => seleccionarReemplazo(evento.target.files?.[0])} className="mt-2 block w-full cursor-pointer text-xs text-neutral-600 file:mr-3 file:cursor-pointer file:border-0 file:bg-[#a51c1c] file:px-4 file:py-2.5 file:text-xs file:font-semibold! file:text-white hover:file:bg-black" /></label><p className="mb-0 mt-1 text-[10px] text-neutral-500">JPG, PNG o WEBP · las imágenes mayores a 5 MB se comprimen automáticamente</p></div>
+        <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"><div><div className="grid gap-2">
+          <figure className="m-0">
+            <div className="relative overflow-hidden border border-neutral-200 bg-neutral-100">
+              <img src={previewReemplazo || imagenEditando.preview} alt={borradorEdicion.nombre} className="aspect-[4/5] w-full object-cover" style={estiloEnfoque(borradorEdicion)} />
+              <span aria-hidden="true" className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#a51c1c] shadow" style={{ left: `${borradorEdicion.enfoqueX}%`, top: `${borradorEdicion.enfoqueY}%` }} />
+            </div>
+            <figcaption className="mt-1 text-[10px] tracking-wide text-neutral-500 uppercase">Recorte vertical · Inicio en móvil</figcaption>
+          </figure>
+          <figure className="m-0">
+            <div className="relative overflow-hidden border border-neutral-200 bg-neutral-100">
+              <img src={previewReemplazo || imagenEditando.preview} alt="" aria-hidden="true" className="aspect-[16/7] w-full object-cover" style={estiloEnfoque(borradorEdicion)} />
+              <span aria-hidden="true" className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#a51c1c] shadow" style={{ left: `${borradorEdicion.enfoqueX}%`, top: `${borradorEdicion.enfoqueY}%` }} />
+            </div>
+            <figcaption className="mt-1 text-[10px] tracking-wide text-neutral-500 uppercase">Recorte horizontal · Inicio y Servicios en escritorio</figcaption>
+          </figure>
+          <div className="grid gap-2">
+            <label className="grid gap-1 text-[11px] font-semibold! text-neutral-600">Encuadre horizontal ({borradorEdicion.enfoqueX}%)<input type="range" min="0" max="100" step="1" value={borradorEdicion.enfoqueX} onChange={(evento) => setBorradorEdicion((actual) => ({ ...actual, enfoqueX: Number(evento.target.value) }))} /></label>
+            <label className="grid gap-1 text-[11px] font-semibold! text-neutral-600">Encuadre vertical ({borradorEdicion.enfoqueY}%)<input type="range" min="0" max="100" step="1" value={borradorEdicion.enfoqueY} onChange={(evento) => setBorradorEdicion((actual) => ({ ...actual, enfoqueY: Number(evento.target.value) }))} /></label>
+          </div>
+          <p className="mb-0 text-[10px] leading-4 text-neutral-500">Las vistas previas usan la misma posición que el sitio público. El recorte cambia según el formato y el tamaño de pantalla, así que comprueba los encuadres 0%, 50% y 100%.</p>
+        </div><label className="mt-3 block text-xs font-semibold! text-neutral-700">Reemplazar archivo<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(evento) => seleccionarReemplazo(evento.target.files?.[0])} className="mt-2 block w-full cursor-pointer text-xs text-neutral-600 file:mr-3 file:cursor-pointer file:border-0 file:bg-[#a51c1c] file:px-4 file:py-2.5 file:text-xs file:font-semibold! file:text-white hover:file:bg-black" /></label><p className="mb-0 mt-1 text-[10px] text-neutral-500">JPG, PNG o WEBP · las imágenes mayores a 5 MB se comprimen automáticamente</p></div>
           <div className="grid content-start gap-4"><label className="grid gap-1.5 text-xs font-semibold! text-neutral-700">Nombre o título<input required maxLength={120} value={borradorEdicion.nombre} onChange={(evento) => setBorradorEdicion((actual) => ({ ...actual, nombre: evento.target.value }))} className="border border-neutral-300 px-3 py-2.5 text-sm font-normal! outline-none focus:border-[#a51c1c]" /></label>
             <label className="grid gap-1.5 text-xs font-semibold! text-neutral-700">Categoría<select required value={borradorEdicion.seccion} onChange={(evento) => setBorradorEdicion((actual) => ({ ...actual, seccion: evento.target.value }))} className="border border-neutral-300 bg-white px-3 py-2.5 text-sm font-normal! outline-none focus:border-[#a51c1c]">{categoriaRetirada(borradorEdicion.seccion) && <option value={borradorEdicion.seccion} disabled>{borradorEdicion.seccion} (se conserva en esta foto)</option>}{[...new Set([...categorias, ...categoriasDisponibles])].map((categoria) => <option key={categoria} value={categoria}>{categoria}</option>)}</select></label>
-            <label className="flex items-center gap-2 text-xs font-semibold! text-neutral-700"><input type="checkbox" checked={borradorEdicion.activo} onChange={(evento) => setBorradorEdicion((actual) => ({ ...actual, activo: evento.target.checked }))} className="accent-[#a51c1c]" />Publicada en el portafolio</label>
           </div></div>
         <div className="mt-6 flex justify-end gap-2 border-t border-neutral-200 pt-4"><button type="button" onClick={cerrarEdicion} disabled={guardandoEdicion} className="border border-neutral-300 bg-white px-4 py-2.5 text-xs font-semibold! text-neutral-700">Cancelar</button><button type="submit" disabled={guardandoEdicion} className="border border-[#a51c1c] bg-[#a51c1c] px-4 py-2.5 text-xs font-semibold! text-white hover:bg-black disabled:opacity-50">{guardandoEdicion ? "Guardando..." : "Guardar cambios"}</button></div>
       </form></div>}

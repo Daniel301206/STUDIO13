@@ -40,6 +40,8 @@ const env = {
   SMTP_PORT: parseOptionalPort("SMTP_PORT"),
   SMTP_USER: process.env.SMTP_USER?.trim() || undefined,
   SMTP_PASS: process.env.SMTP_PASS || undefined,
+  SMTP_FROM: process.env.SMTP_FROM?.trim() || undefined,
+  ADMIN_URL: (process.env.ADMIN_URL?.trim() || "http://localhost:3002").replace(/\/+$/, ""),
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME?.trim() || undefined,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY?.trim() || undefined,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET?.trim() || undefined,

@@ -31,6 +31,7 @@ const trazosIcono = {
   megaphone: <><path d="M3 11v2a2 2 0 0 0 2 2h2l11 4V5L7 9H5a2 2 0 0 0-2 2Z" /><path d="m8 15 2 6h3l-2-5" /><path d="M18 9a3 3 0 0 1 0 6" /></>,
 
   logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></>,
+  download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></>,
   menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
 };
 
