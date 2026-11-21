@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import studio13Logo from "../../assets/studio13_negro.PNG";
@@ -19,6 +19,9 @@ export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuEntering, setMenuEntering] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const hamburgerRef = useRef(null);
+  const closeMenuRef = useRef(null);
+  const menuWasOpen = useRef(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
   const onLight = !isHome;
@@ -41,6 +44,18 @@ export default function Layout({ children }) {
     };
     breakpointEscritorio.addEventListener("change", cerrarEnEscritorio);
     return () => breakpointEscritorio.removeEventListener("change", cerrarEnEscritorio);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (menuOpen) {
+      menuWasOpen.current = true;
+      closeMenuRef.current?.focus();
+      return;
+    }
+    if (menuWasOpen.current) {
+      menuWasOpen.current = false;
+      if (window.matchMedia("(max-width: 767px)").matches) hamburgerRef.current?.focus();
+    }
   }, [menuOpen]);
 
   useEffect(() => {
@@ -137,39 +152,38 @@ export default function Layout({ children }) {
 
           {/* Mobile hamburger */}
           <button
+            ref={hamburgerRef}
+            type="button"
             onClick={abrirMenuMovil}
-            className="md:hidden flex flex-col gap-1.25 p-1 bg-transparent border-0 cursor-pointer"
+            className="md:hidden inline-flex h-11 w-11 shrink-0 items-center justify-center border-0 bg-transparent cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#ff5a52]"
             aria-expanded={menuOpen}
-            aria-label="Menú"
+            aria-controls="menu-movil-panel"
+            aria-label="Abrir menú"
           >
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className={[
-                  "block w-5.5 h-px transition-all duration-250",
-                  onLight ? "bg-[#1a1818]" : "bg-white",
-                  i === 1 && menuOpen ? "opacity-0" : "",
-                  i === 0 && menuOpen ? "rotate-45 translate-y-1.5" : "",
-                  i === 2 && menuOpen ? "-rotate-45 -translate-y-1.5" : "",
-                ].join(" ")}
-              />
-            ))}
+            <span className="flex w-4 flex-col items-center gap-[3px]" aria-hidden="true">
+              {[0, 1, 2].map((line) => (
+                <span
+                  key={line}
+                  className={`block h-px w-4 rounded-full ${onLight ? "bg-[#1a1818]/70" : "bg-white/70"}`}
+                />
+              ))}
+            </span>
           </button>
         </div>
       </nav>
 
       {menuOpen && typeof document !== "undefined" && createPortal(
-        <div className={`fixed inset-0 z-[1000] h-[100dvh] w-full overflow-y-auto overscroll-contain border border-white/10 bg-black/60 text-white backdrop-blur-xl transition-opacity duration-300 ease-out motion-reduce:transition-none md:hidden ${menuEntering ? "opacity-100" : "opacity-0"}`}>
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(165,28,28,0.18),transparent_55%),linear-gradient(180deg,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.68)_100%)]" aria-hidden="true" />
+        <div id="menu-movil-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación" className={`site13-menu-movil fixed inset-0 z-[1000] h-[100dvh] w-full overflow-y-auto overscroll-contain text-white transition-opacity duration-200 ease-out motion-reduce:transition-none md:hidden ${menuEntering ? "opacity-100" : "opacity-0"}`}>
           <div className="relative z-10 mx-auto flex min-h-full w-full max-w-340 flex-col px-5 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] sm:px-10">
-            <div className="flex h-14.5 shrink-0 items-center justify-between border-b border-white/10">
+            <div className="flex h-14.5 shrink-0 items-center justify-between border-b border-[rgba(255,255,255,0.14)]">
               <NavLink to="/" onClick={cerrarMenuMovil} className="flex items-baseline no-underline" aria-label="Studio13, inicio">
                 <img src={studio13LogoWhite} alt="Studio13" className="h-8 w-auto object-contain" />
               </NavLink>
               <button
+                ref={closeMenuRef}
                 type="button"
                 onClick={cerrarMenuMovil}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-transparent text-3xl font-light text-white"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[rgba(255,255,255,0.28)] bg-[rgba(255,255,255,0.08)] text-3xl font-light text-white focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#ff5a52]"
                 aria-label="Cerrar menú"
               >
                 ×
@@ -184,12 +198,12 @@ export default function Layout({ children }) {
                   onClick={cerrarMenuMovil}
                   style={{ transitionDelay: `${index * 40}ms` }}
                   className={({ isActive }) => [
-                    `flex min-h-16 items-center gap-4 border-b border-white/10 font-[Fraunces,Georgia,serif] text-3xl leading-none normal-case tracking-normal no-underline transition-[opacity,transform,color] duration-300 ease-out motion-reduce:transition-none ${menuEntering ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`,
-                    isActive ? "text-[#a51c1c]" : "text-white",
+                    `site13-menu-link flex min-h-16 items-center gap-4 border-b border-[rgba(255,255,255,0.14)] font-sans text-[28px] font-medium leading-none normal-case tracking-normal no-underline transition-[opacity,transform,color] duration-200 ease-out motion-reduce:transition-none ${menuEntering ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`,
+                    isActive ? "text-[#ff5a52]" : "text-white",
                   ].join(" ")}
                 >
-                  <span className="font-['Inter'] text-xs tracking-[0.18em] text-[#a51c1c]" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                  <span className={`border-b pb-1 ${location.pathname === link.to ? "border-[#a51c1c]" : "border-transparent"}`}>{link.label}</span>
+                  <span className="font-sans text-xs tracking-[0.18em] text-[#ff6b63]" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                  <span className={`border-b pb-1 ${location.pathname === link.to ? "border-b-2 border-[#a61c1c]" : "border-transparent"}`}>{link.label}</span>
                 </NavLink>
               ))}
             </nav>
@@ -222,8 +236,7 @@ export default function Layout({ children }) {
               />
             </div>
             <p className="font-['Inter'] font-light text-[0.875rem] leading-[1.8] tracking-wide text-[#5a5856] max-w-65">
-              Cada imagen es una forma de volver a vivir. Puerto Cito, Costa
-              Rica.
+              Cada imagen es una forma de volver a vivir.
             </p>
           </div>
 
@@ -240,7 +253,7 @@ export default function Layout({ children }) {
                   href: "mailto:studio13@gmail.com",
                   text: "studio13@gmail.com",
                 },
-                { href: "#", text: "Puerto Cito, CR" },
+                { href: "https://maps.app.goo.gl/w2ATHL57T6s8QwDo9", text: "Miraflores 311, Pucallpa 25006" },
               ],
             },
             {
@@ -273,10 +286,10 @@ export default function Layout({ children }) {
 
         <div className="border-t border-white/6 px-10 py-5 flex flex-col sm:flex-row justify-between items-center gap-2">
           <p className="font-['Inter'] font-light text-[0.7rem] text-[#3a3836] tracking-wider">
-            © 2025 Studio13
+            © 2026 Studio13
           </p>
           <p className="font-['Inter'] font-light text-[0.7rem] text-[#3a3836] tracking-wider">
-            Fotografía Profesional · Costa Rica
+            Fotografía Profesional 
           </p>
         </div>
       </footer>
