@@ -4,9 +4,9 @@ import studio13LogoWhite from "../assets/studio13_blanco.png";
 import fotoDetrasDelLente from "../assets/imagen_alquiler.jpg";
 
 // Importa aquí las tres fotografías pendientes cuando estén disponibles.
-// import fotoElEstudio from "../assets/foto-el-estudio.jpg";
-// import fotoHerramientas from "../assets/foto-herramientas.jpg";
-// import fotoPreparacion from "../assets/foto-preparacion.jpg";
+import imagenFotografias01 from "../assets/imagen_Inicio01.png";
+import imagenFotografias02 from "../assets/imagen_Inicio02.jpg";
+import imagenFotografias03 from "../assets/imagen_Inicio03.jpg";
 
 const milestones = [
   {
@@ -29,12 +29,6 @@ const milestones = [
 
 const studioPhotos = [
   {
-    id: "detras-del-lente",
-    //src: ,
-    alt: "Fotógrafa trabajando en sesión",
-    caption: "Detrás del lente",
-  },
-  {
     id: "el-estudio",
     src: fotoDetrasDelLente, // fotoElEstudio
     alt: "Interior del estudio",
@@ -42,22 +36,28 @@ const studioPhotos = [
   },
   {
     id: "herramientas-de-trabajo",
-    src: null, // fotoHerramientas
+    src: imagenFotografias01, // fotoHerramientas
     alt: "Equipo fotográfico",
     caption: "Herramientas de trabajo",
   },
   {
     id: "preparacion-de-sesion",
-    src: null, // fotoPreparacion
+    src: imagenFotografias03, // fotoPreparacion
     alt: "Preparación de sesión",
     caption: "Cada detalle importa",
+  },
+  {
+    id: "detras-del-lente",
+    src: imagenFotografias02,
+    alt: "Fotógrafa trabajando en sesión",
+    caption: "Detrás del lente",
   },
 ];
 
 const tieneImagen = (src) => typeof src === "string" && src.trim().length > 0;
 
 export default function Nosotros() {
-  const fotoPrincipal = studioPhotos[0];
+  const [fotoEstudio, fotoHerramientas, fotoPreparacion, fotoGrupo] = studioPhotos;
 
   return (
     <Layout>
@@ -65,7 +65,7 @@ export default function Nosotros() {
         {/* HERO */}
         <section className="relative h-[80vh] min-h-125 overflow-hidden bg-[#1a1818]">
           <img
-            //src={}
+            src={imagenFotografias03}
             alt="Fotógrafo en acción — Studio13"
             className="
             absolute
@@ -173,19 +173,110 @@ export default function Nosotros() {
             El estudio · Detrás de cámaras
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] md:grid-rows-[400px_280px] gap-0.5">
-            {/* MAIN PHOTO */}
-            <div className="md:row-span-2 overflow-hidden bg-[#2a2826]">
-              {fotoPrincipal && tieneImagen(fotoPrincipal.src) && (
+          {/* Móvil: mosaico actual. Desde md: grid original de escritorio. */}
+          <div className="grid w-full max-w-195 grid-cols-[1.15fr_1fr] grid-rows-[254px_254px_auto] gap-3 md:max-w-none md:grid-cols-[2fr_1fr_1fr] md:grid-rows-[400px_280px] md:gap-0.5">
+            {/* ESTUDIO: grande en móvil; segunda foto en escritorio. */}
+            <div className="relative col-start-1 row-start-1 row-span-2 overflow-hidden bg-[#2a2826] md:col-start-2 md:row-start-1 md:row-span-1">
+              {tieneImagen(fotoEstudio?.src) && (
                 <img
-                  src={fotoPrincipal.src}
-                  alt={fotoPrincipal.alt}
+                  src={fotoEstudio.src}
+                  alt={fotoEstudio.alt}
                   className="
                   w-full
                   h-full
                   object-cover
+                  object-center
                   block
                   opacity-[0.85]
+                  md:opacity-[0.8]
+                  transition-transform
+                  duration-800
+                  ease-out
+                  hover:scale-[1.04]
+                  md:hover:scale-[1.05]
+                "
+                />
+              )}
+
+              <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/55 to-transparent px-3 pt-12 pb-3 md:inset-x-auto md:bottom-3 md:left-3 md:bg-none md:p-0">
+                <p className="font-['Inter'] font-light text-[0.6rem] leading-relaxed tracking-[0.18em] uppercase text-[rgba(244,243,240,0.4)] wrap-break-word md:leading-normal md:break-normal">
+                  {fotoEstudio?.caption}
+                </p>
+              </div>
+            </div>
+
+            {/* HERRAMIENTAS: pequeña arriba a la derecha en móvil; tercera en escritorio. */}
+            <div className="relative col-start-2 row-start-1 overflow-hidden bg-[#2a2826] md:col-start-3 md:row-start-1">
+              {tieneImagen(fotoHerramientas?.src) && (
+                <img
+                  src={fotoHerramientas.src}
+                  alt={fotoHerramientas.alt}
+                  className="
+                  w-full
+                  h-full
+                  object-cover
+                  object-[30%_center]
+                  md:object-center
+                  block
+                  opacity-[0.8]
+                  transition-transform
+                  duration-800
+                  ease-out
+                  hover:scale-[1.05]
+                "
+                />
+              )}
+
+              <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/55 to-transparent px-3 pt-10 pb-3 md:inset-x-auto md:bottom-3 md:left-3 md:bg-none md:p-0">
+                <p className="font-['Inter'] font-light text-[0.55rem] leading-normal tracking-[0.14em] uppercase text-[rgba(244,243,240,0.4)] wrap-break-word md:text-[0.6rem] md:tracking-[0.18em] md:break-normal">
+                  {fotoHerramientas?.caption}
+                </p>
+              </div>
+            </div>
+
+            {/* PREPARACIÓN: pequeña abajo a la derecha en móvil; cuarta en escritorio. */}
+            <div className="relative col-start-2 row-start-2 overflow-hidden bg-[#2a2826] md:col-start-2 md:row-start-2">
+              {tieneImagen(fotoPreparacion?.src) && (
+                <img
+                  src={fotoPreparacion.src}
+                  alt={fotoPreparacion.alt}
+                  className="
+                  w-full
+                  h-full
+                  object-cover
+                  object-[38%_center]
+                  md:object-center
+                  block
+                  opacity-[0.8]
+                  transition-transform
+                  duration-800
+                  ease-out
+                  hover:scale-[1.05]
+                "
+                />
+              )}
+
+              <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/55 to-transparent px-3 pt-10 pb-3 md:inset-x-auto md:bottom-3 md:left-3 md:bg-none md:p-0">
+                <p className="font-['Inter'] font-light text-[0.55rem] leading-normal tracking-[0.14em] uppercase text-[rgba(244,243,240,0.4)] wrap-break-word md:text-[0.6rem] md:tracking-[0.18em] md:break-normal">
+                  {fotoPreparacion?.caption}
+                </p>
+              </div>
+            </div>
+
+            {/* GRUPO: panorámica inferior en móvil; imagen principal original en escritorio. */}
+            <div className="relative col-span-2 row-start-3 aspect-video w-full overflow-hidden bg-[#2a2826] md:col-span-1 md:col-start-1 md:row-start-1 md:row-span-2 md:aspect-auto">
+              {tieneImagen(fotoGrupo?.src) && (
+                <img
+                  src={fotoGrupo.src}
+                  alt={fotoGrupo.alt}
+                  className="
+                  w-full
+                  h-full
+                  object-cover
+                  object-center
+                  block
+                  opacity-[0.8]
+                  md:opacity-[0.85]
                   transition-transform
                   duration-800
                   ease-out
@@ -193,13 +284,19 @@ export default function Nosotros() {
                 "
                 />
               )}
+
+              <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/55 to-transparent px-4 pt-16 pb-4 md:hidden">
+                <p className="font-['Inter'] font-light text-[0.6rem] leading-relaxed tracking-[0.18em] uppercase text-[rgba(244,243,240,0.4)]">
+                  {fotoGrupo?.caption}
+                </p>
+              </div>
             </div>
 
-            {/* OTHER PHOTOS */}
-            {studioPhotos.slice(1).map((photo) => (
+            {/* FOTOS EXTRA (>4): ancho completo en móvil; en escritorio siguen el flujo original. */}
+            {studioPhotos.slice(4).map((photo) => (
               <div
                 key={photo.id}
-                className="overflow-hidden bg-[#2a2826] relative"
+                className="relative col-span-2 aspect-video w-full overflow-hidden bg-[#2a2826] md:col-span-1 md:row-auto md:aspect-auto"
               >
                 {tieneImagen(photo.src) && (
                   <img
@@ -209,6 +306,7 @@ export default function Nosotros() {
                     w-full
                     h-full
                     object-cover
+                    object-center
                     block
                     opacity-[0.8]
                     transition-transform
@@ -219,8 +317,8 @@ export default function Nosotros() {
                   />
                 )}
 
-                <div className="absolute bottom-3 left-3">
-                  <p className="font-['Inter'] font-light text-[0.6rem] tracking-[0.18em] uppercase text-[rgba(244,243,240,0.4)]">
+                <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/55 to-transparent px-4 pt-16 pb-4 md:inset-x-auto md:bottom-3 md:left-3 md:bg-none md:p-0">
+                  <p className="font-['Inter'] font-light text-[0.6rem] leading-relaxed tracking-[0.18em] uppercase text-[rgba(244,243,240,0.4)] md:leading-normal md:break-normal">
                     {photo.caption}
                   </p>
                 </div>

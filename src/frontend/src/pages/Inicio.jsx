@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "../pages/Layout/Layout.jsx";
 import studio13Logo from "../assets/studio13_blanco.png";
-
+import imagenHero from "../assets/imagen_Inicio01.png";
 import imagenFotografias01 from "../assets/imagen_fotografias01.jpg";
 import imagenFotografias02 from "../assets/imagen_fotografias02.jpg";
 import imagenFotografias03 from "../assets/imagen_fotografias03.jpg";
@@ -79,8 +79,8 @@ function ImagenRotativa({ imagenes, etiqueta }) {
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {imagenSiguiente && <img src={imagenSiguiente.url} alt="" aria-hidden="true" style={estiloEnfoque(imagenSiguiente)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1500ms] ease-in-out ${fundiendo ? "opacity-100" : "opacity-0"}`} />}
-      <img src={imagenActual.url} alt={etiqueta} style={estiloEnfoque(imagenActual)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1500ms] ease-in-out ${fundiendo ? "opacity-0" : "opacity-100"}`} />
+      {imagenSiguiente && <img src={imagenSiguiente.url} alt="" aria-hidden="true" style={estiloEnfoque(imagenSiguiente)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1500 ease-in-out ${fundiendo ? "opacity-100" : "opacity-0"}`} />}
+      <img src={imagenActual.url} alt={etiqueta} style={estiloEnfoque(imagenActual)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1500 ease-in-out ${fundiendo ? "opacity-0" : "opacity-100"}`} />
     </div>
   );
 }
@@ -204,44 +204,51 @@ const Inicio = () => {
     <Layout>
       <div className="bg-white">
         {/* ── HERO ── */}
-        <section className="relative h-svh min-h-188 overflow-hidden bg-[#434343] sm:min-h-150">
+        <section className="relative h-svh min-h-[100svh] overflow-hidden bg-black md:min-h-150">
           <img
-           // src={}
+            src={imagenHero}
             alt="Fotógrafo de Studio13 con su cámara"
-            className="absolute right-0 bottom-0 z-0 h-auto w-[62vw] max-w-[18rem] object-contain object-bottom sm:inset-y-0 sm:h-full sm:w-auto sm:max-w-[75%] sm:object-bottom-right"
+            className="absolute inset-0 z-0 h-full w-full object-cover object-[70%_center] md:object-right"
           />
-          <div className="absolute inset-0 z-1 bg-linear-to-r from-black via-black/85 via-40% to-transparent to-80%" aria-hidden="true" />
+          <div className="absolute inset-0 z-1 bg-[linear-gradient(0deg,rgba(0,0,0,0.9)_0%,rgba(0,0,0,0.62)_34%,transparent_76%)] md:bg-[linear-gradient(90deg,rgba(0,0,0,0.78)_0%,rgba(0,0,0,0.58)_30%,rgba(0,0,0,0.24)_52%,transparent_78%)]" aria-hidden="true" />
+          <div className="absolute inset-x-0 top-0 z-1 h-24 bg-[linear-gradient(180deg,rgba(0,0,0,0.55)_0%,transparent_100%)] md:h-36" aria-hidden="true" />
 
-          <div className="absolute bottom-12 left-5 z-10 w-[58%] max-w-140 sm:bottom-16 sm:left-12 sm:w-auto">
-            <p className="mb-3 font-['Inter'] text-[0.52rem] font-normal tracking-[0.2em] text-white/70 uppercase sm:mb-[1.1rem] sm:text-[0.62rem] sm:tracking-[0.32em]">
+          <div className="absolute bottom-12 left-5 z-10 w-[calc(100%-2.5rem)] max-w-140 md:bottom-16 md:left-12 md:w-auto">
+            <p className="mb-3 hidden font-['Inter'] text-[0.52rem] font-normal tracking-[0.2em] text-white/70 uppercase md:mb-[1.1rem] md:block md:text-[0.62rem] md:tracking-[0.32em]">
               Fotografía profesional — Momentos que perduran.
             </p>
             <img
               src={studio13Logo}
               alt="Studio13"
-              className="mb-5 h-22 w-auto object-contain sm:mb-8 sm:h-26"
+              className="mb-5 h-22 w-auto object-contain md:mb-8 md:h-26"
             />
-            <p className="mb-5 max-w-85 font-['Inter'] text-[0.7rem] leading-[1.65] font-light tracking-[0.06em] text-white/80 sm:mb-8 sm:text-[0.82rem] sm:leading-[1.7] sm:tracking-[0.12em]">
+            <p className="mb-5 max-w-85 font-['Inter'] text-[0.7rem] leading-[1.65] font-light tracking-[0.06em] text-white/80 md:mb-8 md:text-[0.82rem] md:leading-[1.7] md:tracking-[0.12em]">
               Fotografía profesional que convierte momentos en imágenes que
               duran para siempre.
             </p>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:gap-4">
+              <Link
+                to="/contacto"
+                className="inline-flex min-h-12 w-full items-center justify-center border border-[#a51c1c] bg-[#a51c1c] px-5 py-3 font-['Inter'] text-xs tracking-[0.16em] text-white uppercase transition-colors hover:bg-[#861717] md:hidden"
+              >
+                Reservar
+              </Link>
               <Link
                 to="/portafolio"
-                className="inline-flex min-h-11 items-center border border-white bg-white px-3 py-3 font-['Inter'] text-[0.58rem] tracking-[0.12em] text-black uppercase transition-all duration-300 hover:-translate-y-0.5 hover:border-gray-200 hover:bg-gray-200 sm:px-6 sm:text-[0.7rem] sm:tracking-[0.18em]"
+                className="inline-flex min-h-12 w-full items-center justify-center border border-white bg-transparent px-3 py-3 font-['Inter'] text-[0.62rem] tracking-[0.12em] text-white uppercase transition-all duration-300 hover:-translate-y-0.5 hover:border-gray-200 hover:bg-gray-200 hover:text-black md:min-h-11 md:w-auto md:justify-start md:bg-white md:px-6 md:text-[0.7rem] md:tracking-[0.18em] md:text-black"
               >
                 Ver portafolio
               </Link>
               <Link
                 to="/paquetes"
-                className="inline-flex min-h-11 items-center border border-white/80 bg-transparent px-3 py-3 font-['Inter'] text-[0.58rem] tracking-[0.12em] text-white uppercase transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-black sm:px-6 sm:text-[0.7rem] sm:tracking-[0.18em]"
+                className="hidden min-h-11 items-center border border-white/80 bg-transparent px-3 py-3 font-['Inter'] text-[0.58rem] tracking-[0.12em] text-white uppercase transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-black md:inline-flex md:px-6 md:text-[0.7rem] md:tracking-[0.18em]"
               >
                 Paquetes
               </Link>
             </div>
           </div>
 
-          <div className="absolute bottom-8 right-5 z-10 hidden flex-col items-center gap-2 sm:right-12 sm:flex">
+          <div className="absolute bottom-8 right-5 z-10 hidden flex-col items-center gap-2 md:right-12 md:flex">
             <div className="w-px h-12 bg-linear-to-b from-transparent to-[rgba(244,243,240,0.35)]" />
             <p className="font-['Inter'] text-[0.58rem] tracking-[0.2em] uppercase text-[rgba(244,243,240,0.3)] [writing-mode:vertical-rl]">
               scroll
@@ -347,7 +354,7 @@ const Inicio = () => {
               <Link
                 key={cat.label}
                 to={cat.filtro ? `/portafolio?categoria=${encodeURIComponent(cat.filtro)}` : "/portafolio"}
-                className={`relative block h-[420px] overflow-hidden no-underline bg-[#1a1818] group sm:h-[360px] lg:h-auto ${i === 0 ? "lg:row-span-2" : ""}`}
+                className={`relative block h-105 overflow-hidden no-underline bg-[#1a1818] group sm:h-90 lg:h-auto ${i === 0 ? "lg:row-span-2" : ""}`}
               >
                 <ImagenRotativa imagenes={imagenesPorCategoria[cat.label]} etiqueta={cat.label} />
                 {/* Degradado discreto solo en la franja del título. */}

@@ -228,7 +228,7 @@ export default function Paquetes() {
 
         {/* TABS */}
         <div className="border-b border-[rgba(26,24,24,0.08)] px-8 md:px-12">
-          <div ref={filaPestanasRef} className="flex flex-nowrap overflow-x-auto [scrollbar-width:thin]">
+          <div ref={filaPestanasRef} className="flex flex-nowrap overflow-x-auto scrollbar-thin">
             {["session", ...(paquetesCampania.length > 0 ? ["campaigns"] : []), "rental", "rates", "memberships"].map((type) => (
               <button
                 key={type}
@@ -402,34 +402,6 @@ export default function Paquetes() {
             </CatalogoHorizontal>
             )}
 
-            {/* EQUIPMENT */}
-            <div className="mt-12 py-8 border-t border-[rgba(26,24,24,0.08)]">
-              <p className="t-label mb-6">Equipamiento incluido</p>
-
-              <div className="columns-[200px] gap-8">
-                {[
-                  "2× Estrobos Godox AD600 Pro",
-                  "3× Softboxes 60×90 cm",
-                  "Paraguas plateado 130 cm",
-                  "Reflectores B/N",
-                  "Fondos: blanco · negro · gris",
-                  "Fondo texturizado vintage",
-                  "Sistema de rieles 10×12 ft",
-                  "Mesa de producto con curva",
-                  "Disparador inalámbrico",
-                  "Aire acondicionado",
-                  "Cortinas black-out",
-                  "Espejo de cuerpo completo",
-                ].map((equipment) => (
-                  <p
-                    key={equipment}
-                    className="t-body text-[0.78rem] mb-2 break-inside-avoid"
-                  >
-                    — {equipment}
-                  </p>
-                ))}
-              </div>
-            </div>
           </section>
         )}
 

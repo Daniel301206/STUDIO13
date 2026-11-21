@@ -71,8 +71,8 @@ function ImagenRotativa({ imagenes, etiqueta }) {
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {imagenSiguiente && <img src={imagenSiguiente.url} alt="" aria-hidden="true" style={estiloEnfoque(imagenSiguiente)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1500ms] ease-in-out ${fundiendo ? "opacity-100" : "opacity-0"}`} />}
-      <img src={imagenActual.url} alt={etiqueta} style={estiloEnfoque(imagenActual)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1500ms] ease-in-out ${fundiendo ? "opacity-0" : "opacity-100"}`} />
+      {imagenSiguiente && <img src={imagenSiguiente.url} alt="" aria-hidden="true" style={estiloEnfoque(imagenSiguiente)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1500 ease-in-out ${fundiendo ? "opacity-100" : "opacity-0"}`} />}
+      <img src={imagenActual.url} alt={etiqueta} style={estiloEnfoque(imagenActual)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1500 ease-in-out ${fundiendo ? "opacity-0" : "opacity-100"}`} />
     </div>
   );
 }

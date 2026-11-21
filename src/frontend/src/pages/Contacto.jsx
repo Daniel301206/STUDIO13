@@ -3,6 +3,45 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
 
+// PORTADA: reemplaza este import por la fotografía definitiva de Contacto.
+import imagenPortadaContacto from "../assets/imagen_Inicio02.jpg";
+
+// GALERÍA: importa aquí las fotografías de Contacto cuando estén disponibles
+// y asígnalas en la entrada correspondiente de `fotosContacto`.
+import fotoContactoAlquiler from "../assets/imagen_alquiler.jpg";
+import fotoContactoEstudio from "../assets/imagen_fotografias02.jpg";
+import fotoContactoDetalle from "../assets/imagen_fotografias03.jpg";
+// import fotoContactoPendiente from "../assets/contacto-04.jpg";
+import imagenFotografias01 from "../assets/imagen_Inicio01.png";
+import imagenFotografias02 from "../assets/imagen_Inicio02.jpg";
+import imagenFotografias03 from "../assets/imagen_Inicio03.jpg";
+// Galería de Contacto: cuatro espacios fijos. Los que aún no tienen foto
+// usan `src: null` y se muestran con su fondo neutro, sin imagen rota.
+const fotosContacto = [
+  {
+    id: "contacto-alquiler",
+    src: imagenFotografias01,
+    alt: "Espacio de alquiler del estudio Studio13",
+  },
+  {
+    id: "contacto-estudio",
+    src: imagenFotografias03,
+    alt: "Sesión fotográfica en el estudio Studio13",
+  },
+  {
+    id: "contacto-detalle",
+    src: fotoContactoAlquiler,
+    alt: "Detalle editorial capturado en Studio13",
+  },
+  {
+    id: "contacto-pendiente",
+    src: imagenFotografias02, // fotoContactoPendiente
+    alt: "Área de trabajo del estudio Studio13",
+  },
+];
+
+const tieneImagen = (src) => typeof src === "string" && src.trim().length > 0;
+
 const API_BASE_URL = (import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`).replace(/\/+$/, "");
 const categoriasReserva = [
   { id: "SESION", nombre: "Sesiones", endpoint: "/api/paquetes?seccion=SESION" },
@@ -84,7 +123,7 @@ function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, sald
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/65 p-3 sm:p-6"
+      className="fixed inset-0 z-120 flex items-center justify-center overflow-y-auto bg-black/65 p-3 sm:p-6"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -123,7 +162,7 @@ function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, sald
               <div>
                 <dt className="t-label mb-1">Cliente</dt>
                 <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{datos.nombre.trim()}</dd>
-                <dd className="m-0 mt-1 break-words font-['Inter'] text-xs text-[#7a7875]">{datos.email.trim()}</dd>
+                <dd className="m-0 mt-1 wrap-break-word font-['Inter'] text-xs text-[#7a7875]">{datos.email.trim()}</dd>
                 <dd className="m-0 mt-0.5 font-['Inter'] text-xs text-[#7a7875]">{datos.telefono.trim()}</dd>
               </div>
               <div>
@@ -354,7 +393,7 @@ export default function Contacto() {
         {/* ── HERO ── */}
         <section className="relative h-[60vh] min-h-100 overflow-hidden bg-[#1a1818]">
           <img
-            src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1800&h=900&fit=crop&auto=format&q=85"
+            src={imagenPortadaContacto}
             alt="Estudio fotográfico Studio13"
             className="absolute inset-0 w-full h-full object-cover object-[center_40%] opacity-[0.55]"
           />
@@ -393,8 +432,8 @@ export default function Contacto() {
                   },
                   {
                     label: "Ubicación",
-                    value: "Puerto Cito, Costa Rica",
-                    href: "#",
+                    value: "Miraflores 311, Pucallpa 25006",
+                    href: "https://maps.app.goo.gl/kmZuzA8TyBrQyhjb9",
                   },
                 ].map((c) => (
                   <div
@@ -435,23 +474,22 @@ export default function Contacto() {
 
               {/* Studio photos */}
               <div className="mt-12 grid grid-cols-2 gap-3">
-                {[
-                  "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=400&h=320&fit=crop&auto=format&q=80",
-                  "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&h=320&fit=crop&auto=format&q=80",
-                  "https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?w=400&h=260&fit=crop&auto=format&q=80",
-                  "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=400&h=260&fit=crop&auto=format&q=80",
-                ].map((src, i) => (
+                {fotosContacto.map((foto, i) => (
                   <div
-                    key={i}
+                    key={foto.id}
                     className={`overflow-hidden bg-[#dedad4] ${
                       i < 2 ? "aspect-5/4" : "aspect-4/3"
                     }`}
                   >
-                    <img
-                      src={src}
-                      alt="Studio13"
-                      className="w-full h-full object-cover block opacity-[0.88] transition-transform duration-600 ease-out hover:scale-[1.05]"
-                    />
+                    {tieneImagen(foto.src) && (
+                      <img
+                        src={foto.src}
+                        alt={foto.alt}
+                        className={`w-full h-full object-cover block opacity-[0.88] transition-transform duration-600 ease-out hover:scale-[1.05] ${
+                          foto.id === "contacto-detalle" ? "md:object-[50%_5%]" : ""
+                        }`}
+                      />
+                    )}
                   </div>
                 ))}
               </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import studio13Logo from "../../assets/studio13_negro.PNG";
 import studio13LogoWhite from "../../assets/studio13_blanco.png";
@@ -16,6 +17,7 @@ const navLinks = [
 
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuEntering, setMenuEntering] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
@@ -30,6 +32,52 @@ export default function Layout({ children }) {
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const breakpointEscritorio = window.matchMedia("(min-width: 768px)");
+    const cerrarEnEscritorio = (event) => {
+      if (event.matches) setMenuOpen(false);
+    };
+    breakpointEscritorio.addEventListener("change", cerrarEnEscritorio);
+    return () => breakpointEscritorio.removeEventListener("change", cerrarEnEscritorio);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen || window.matchMedia("(min-width: 768px)").matches) return undefined;
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = overflowAnterior;
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const frame = window.requestAnimationFrame(() => setMenuEntering(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const cerrarConEscape = (event) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setMenuEntering(false);
+      }
+    };
+    window.addEventListener("keydown", cerrarConEscape);
+    return () => window.removeEventListener("keydown", cerrarConEscape);
+  }, [menuOpen]);
+
+  const abrirMenuMovil = () => {
+    setMenuEntering(false);
+    setMenuOpen(true);
+  };
+  const cerrarMenuMovil = () => {
+    setMenuOpen(false);
+    setMenuEntering(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -89,7 +137,7 @@ export default function Layout({ children }) {
 
           {/* Mobile hamburger */}
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={abrirMenuMovil}
             className="md:hidden flex flex-col gap-1.25 p-1 bg-transparent border-0 cursor-pointer"
             aria-expanded={menuOpen}
             aria-label="Menú"
@@ -108,29 +156,54 @@ export default function Layout({ children }) {
             ))}
           </button>
         </div>
-
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div className={`md:hidden border-t px-5 pt-3 pb-5 backdrop-blur-xl sm:px-10 sm:pt-6 sm:pb-8 ${isHome ? "border-white/10 bg-[rgba(12,11,11,0.97)]" : "border-black/8 bg-white"}`}>
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.to === "/"}
-                className={({ isActive }) =>
-                  [
-                    "block border-b py-3 font-['Inter'] text-[0.7rem] tracking-[0.22em] uppercase no-underline transition-colors duration-200",
-                    isHome ? "border-white/10" : "border-black/6",
-                    isActive ? "text-[#a51c1c]" : isHome ? "text-white/85 hover:text-white" : "text-[#1a1818]",
-                  ].join(" ")
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
-        )}
       </nav>
+
+      {menuOpen && typeof document !== "undefined" && createPortal(
+        <div className={`fixed inset-0 z-[1000] h-[100dvh] w-full overflow-y-auto overscroll-contain border border-white/10 bg-black/60 text-white backdrop-blur-xl transition-opacity duration-300 ease-out motion-reduce:transition-none md:hidden ${menuEntering ? "opacity-100" : "opacity-0"}`}>
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(165,28,28,0.18),transparent_55%),linear-gradient(180deg,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.68)_100%)]" aria-hidden="true" />
+          <div className="relative z-10 mx-auto flex min-h-full w-full max-w-340 flex-col px-5 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] sm:px-10">
+            <div className="flex h-14.5 shrink-0 items-center justify-between border-b border-white/10">
+              <NavLink to="/" onClick={cerrarMenuMovil} className="flex items-baseline no-underline" aria-label="Studio13, inicio">
+                <img src={studio13LogoWhite} alt="Studio13" className="h-8 w-auto object-contain" />
+              </NavLink>
+              <button
+                type="button"
+                onClick={cerrarMenuMovil}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-transparent text-3xl font-light text-white"
+                aria-label="Cerrar menú"
+              >
+                ×
+              </button>
+            </div>
+            <nav className="flex flex-1 flex-col justify-center" aria-label="Navegación móvil">
+              {navLinks.map((link, index) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.to === "/"}
+                  onClick={cerrarMenuMovil}
+                  style={{ transitionDelay: `${index * 40}ms` }}
+                  className={({ isActive }) => [
+                    `flex min-h-16 items-center gap-4 border-b border-white/10 font-[Fraunces,Georgia,serif] text-3xl leading-none normal-case tracking-normal no-underline transition-[opacity,transform,color] duration-300 ease-out motion-reduce:transition-none ${menuEntering ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`,
+                    isActive ? "text-[#a51c1c]" : "text-white",
+                  ].join(" ")}
+                >
+                  <span className="font-['Inter'] text-xs tracking-[0.18em] text-[#a51c1c]" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                  <span className={`border-b pb-1 ${location.pathname === link.to ? "border-[#a51c1c]" : "border-transparent"}`}>{link.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+            <NavLink
+              to="/contacto"
+              onClick={cerrarMenuMovil}
+              className="mt-6 inline-flex min-h-14 w-full shrink-0 items-center justify-center gap-3 bg-[#a51c1c] px-5 py-3 font-['Inter'] text-xs tracking-[0.2em] text-white uppercase no-underline transition-colors hover:bg-[#861717]"
+            >
+              Reservar <span aria-hidden="true">→</span>
+            </NavLink>
+          </div>
+        </div>,
+        document.body,
+      )}
 
       {/* ── PAGE ── */}
       <main className={`site13-main flex-1 ${isHome ? "pt-0" : "site13-main-con-nav"}`}>

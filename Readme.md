@@ -187,6 +187,30 @@ npm run dev
 
 ---
 
+## Uso como aplicación en iOS
+
+El panel administrativo y el sitio público incluyen manifest, iconos y metadatos para instalarse en iPhone o iPad y abrirse en modo aplicación (sin la barra de Safari).
+
+### Probar desde la red local
+
+1. Inicia el backend, el frontend y el panel administrativo en la computadora.
+2. Conecta el iPhone a la misma red Wi-Fi.
+3. Averigua la IP local de la computadora (por ejemplo `192.168.1.20`).
+4. Abre en Safari `http://192.168.1.20:3002` para el panel o `http://192.168.1.20:3000` para el sitio.
+5. Toca **Compartir → Añadir a pantalla de inicio**.
+
+Los servidores de Vite ya aceptan conexiones de la red local (`server.host`). El backend permite orígenes de red privada durante el desarrollo, y las apps calculan la URL de la API usando el mismo host desde el que se abren.
+
+### Producción
+
+- Publica ambas apps con **HTTPS**; iOS solo habilita el service worker y algunas funciones de aplicación en conexión segura.
+- Configura el servidor para devolver `index.html` en todas las rutas del panel y del sitio (fallback de SPA), de modo que rutas como `/Inicio` o `/contacto` funcionen al abrir la app instalada.
+- Define `VITE_API_URL` en el build si la API vive en otro dominio.
+- Agrega el dominio público del frontend y del panel a `CORS_ORIGINS` en `src/backend/.env`.
+- La sesión del panel se guarda en `sessionStorage`, por lo que al cerrar la app instalada se solicita iniciar sesión nuevamente.
+
+---
+
 # Funcionalidades Implementadas
 
 ### Visitantes
