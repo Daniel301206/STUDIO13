@@ -160,7 +160,7 @@ export default function Layout({ children }) {
             aria-controls="menu-movil-panel"
             aria-label="Abrir menú"
           >
-            <span className="flex w-4 flex-col items-center gap-[3px]" aria-hidden="true">
+            <span className="flex w-4 flex-col items-center gap-0.75" aria-hidden="true">
               {[0, 1, 2].map((line) => (
                 <span
                   key={line}
@@ -173,7 +173,7 @@ export default function Layout({ children }) {
       </nav>
 
       {menuOpen && typeof document !== "undefined" && createPortal(
-        <div id="menu-movil-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación" className={`site13-menu-movil fixed inset-0 z-[1000] h-[100dvh] w-full overflow-y-auto overscroll-contain text-white transition-opacity duration-200 ease-out motion-reduce:transition-none md:hidden ${menuEntering ? "opacity-100" : "opacity-0"}`}>
+        <div id="menu-movil-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación" className={`site13-menu-movil fixed inset-0 z-1000 h-dvh w-full overflow-y-auto overscroll-contain text-white transition-opacity duration-200 ease-out motion-reduce:transition-none md:hidden ${menuEntering ? "opacity-100" : "opacity-0"}`}>
           <div className="relative z-10 mx-auto flex min-h-full w-full max-w-340 flex-col px-5 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] sm:px-10">
             <div className="flex h-14.5 shrink-0 items-center justify-between border-b border-[rgba(255,255,255,0.14)]">
               <NavLink to="/" onClick={cerrarMenuMovil} className="flex items-baseline no-underline" aria-label="Studio13, inicio">
