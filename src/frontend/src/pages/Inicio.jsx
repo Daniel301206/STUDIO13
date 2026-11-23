@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "../pages/Layout/Layout.jsx";
 import studio13Logo from "../assets/studio13_blanco.png";
-import imagenHero from "../assets/imagen_Inicio01.png";
+import imagenHero from "../assets/imagen_Inicio01.jpg";
 import imagenFotografias01 from "../assets/imagen_fotografias01.jpg";
 import imagenFotografias02 from "../assets/imagen_fotografias02.jpg";
 import imagenFotografias03 from "../assets/imagen_fotografias03.jpg";

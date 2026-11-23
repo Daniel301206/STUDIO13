@@ -4,7 +4,7 @@ import studio13LogoWhite from "../assets/studio13_blanco.png";
 import fotoDetrasDelLente from "../assets/imagen_alquiler.jpg";
 
 // Importa aquí las tres fotografías pendientes cuando estén disponibles.
-import imagenFotografias01 from "../assets/imagen_Inicio01.png";
+import imagenFotografias01 from "../assets/imagen_Inicio01.jpg";
 import imagenFotografias02 from "../assets/imagen_Inicio02.jpg";
 import imagenFotografias03 from "../assets/imagen_Inicio03.jpg";
 

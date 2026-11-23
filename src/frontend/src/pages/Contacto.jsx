@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import Layout from "../pages/Layout/Layout";
 
@@ -9,10 +8,8 @@ import imagenPortadaContacto from "../assets/imagen_Inicio02.jpg";
 // GALERÍA: importa aquí las fotografías de Contacto cuando estén disponibles
 // y asígnalas en la entrada correspondiente de `fotosContacto`.
 import fotoContactoAlquiler from "../assets/imagen_alquiler.jpg";
-import fotoContactoEstudio from "../assets/imagen_fotografias02.jpg";
-import fotoContactoDetalle from "../assets/imagen_fotografias03.jpg";
 // import fotoContactoPendiente from "../assets/contacto-04.jpg";
-import imagenFotografias01 from "../assets/imagen_Inicio01.png";
+import imagenFotografias01 from "../assets/imagen_Inicio01.jpg";
 import imagenFotografias02 from "../assets/imagen_Inicio02.jpg";
 import imagenFotografias03 from "../assets/imagen_Inicio03.jpg";
 // Galería de Contacto: cuatro espacios fijos. Los que aún no tienen foto
@@ -51,213 +48,6 @@ const categoriasReserva = [
 ];
 const formularioVacio = { nombre: "", email: "", telefono: "", paquete: "", paqueteId: "", mensaje: "" };
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const formatoMoneda = new Intl.NumberFormat("es-PE", {
-  style: "currency",
-  currency: "PEN",
-  minimumFractionDigits: 2,
-});
-const formatearMoneda = (valor) => {
-  if (valor === null || valor === undefined || valor === "") return null;
-  const numero = Number(valor);
-  return Number.isFinite(numero) ? formatoMoneda.format(numero) : null;
-};
-const numeroOpcional = (valor) => {
-  if (valor === null || valor === undefined || valor === "") return null;
-  const numero = Number(valor);
-  return Number.isFinite(numero) ? numero : null;
-};
-// No hay pasarela de pago configurada en el proyecto. Se mantiene desactivado
-// hasta que exista un flujo real verificado por el backend.
-const pagoEnLineaDisponible = false;
-
-function PagoAdelantadoModal({ datos, categoria, paquete, precio, adelanto, saldo, onClose }) {
-  const dialogRef = useRef(null);
-  const closeRef = useRef(null);
-  const onCloseRef = useRef(onClose);
-  const [aviso, setAviso] = useState("");
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    const previousFocus = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") onCloseRef.current();
-      if (event.key !== "Tab") return;
-      const items = dialogRef.current?.querySelectorAll(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href]',
-      );
-      if (!items?.length) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousFocus?.focus?.();
-    };
-  }, []);
-
-  const continuar = (event) => {
-    event.preventDefault();
-    if (!pagoEnLineaDisponible) {
-      setAviso("El pago en línea aún no está disponible. No se realizó ningún cargo ni se envió la solicitud. Cancela y usa «Enviar solicitud» para reservar sin pagar.");
-      return;
-    }
-  };
-
-  const precioFormateado = formatearMoneda(precio);
-  const adelantoFormateado = formatearMoneda(adelanto);
-  const saldoFormateado = formatearMoneda(saldo);
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-120 flex items-center justify-center overflow-y-auto bg-black/65 p-3 sm:p-6"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="pago-adelantado-titulo"
-        className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto border border-[rgba(26,24,24,0.18)] bg-[#f8f7f4] p-5 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-8"
-      >
-        <form onSubmit={continuar} noValidate aria-label="Formulario de pago por adelantado">
-        <header className="mb-6 flex items-start justify-between gap-4 border-b border-[rgba(26,24,24,0.12)] pb-4">
-          <div>
-            <p className="t-label mb-2 text-[#a51c1c]!">Pago</p>
-            <h2 id="pago-adelantado-titulo" className="m-0 font-[Fraunces,Georgia,serif] text-2xl font-extralight italic text-[#1a1818] sm:text-3xl">
-              Pago por adelantado
-            </h2>
-            <p className="t-body mb-0 mt-2 text-[0.8rem]!">Revisa los datos antes de continuar. Este formulario de pago es independiente de la solicitud de reserva.</p>
-          </div>
-          <button
-            ref={closeRef}
-            type="button"
-            aria-label="Cerrar pago por adelantado"
-            onClick={onClose}
-            className="border border-[rgba(26,24,24,0.25)] bg-transparent px-3 py-2 text-xl leading-none text-[#1a1818] transition-colors hover:border-[#a51c1c] hover:text-[#a51c1c]"
-          >
-            ×
-          </button>
-        </header>
-
-        <div className="grid gap-6">
-          <section aria-labelledby="pago-resumen-titulo">
-            <p id="pago-resumen-titulo" className="t-label mb-3">Resumen del cliente</p>
-            <dl className="grid gap-3 border-y border-[rgba(26,24,24,0.1)] py-4 sm:grid-cols-2">
-              <div>
-                <dt className="t-label mb-1">Cliente</dt>
-                <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{datos.nombre.trim()}</dd>
-                <dd className="m-0 mt-1 wrap-break-word font-['Inter'] text-xs text-[#7a7875]">{datos.email.trim()}</dd>
-                <dd className="m-0 mt-0.5 font-['Inter'] text-xs text-[#7a7875]">{datos.telefono.trim()}</dd>
-              </div>
-              <div>
-                <dt className="t-label mb-1">Categoría</dt>
-                <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{categoria?.nombre || "—"}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="t-label mb-1">Paquete</dt>
-                <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{paquete || "—"}</dd>
-              </div>
-            </dl>
-          </section>
-
-          <section aria-labelledby="pago-detalle-titulo">
-            <p id="pago-detalle-titulo" className="t-label mb-3">Detalle de pago</p>
-            <dl className="grid gap-3">
-              {precioFormateado && (
-                <div className="flex items-baseline justify-between gap-4">
-                  <dt className="font-['Inter'] text-sm text-[#5a5856]">Precio del paquete</dt>
-                  <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{precioFormateado}</dd>
-                </div>
-              )}
-              {adelantoFormateado && (
-                <div className="flex items-baseline justify-between gap-4">
-                  <dt className="font-['Inter'] text-sm text-[#5a5856]">Importe del adelanto</dt>
-                  <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{adelantoFormateado}</dd>
-                </div>
-              )}
-              {saldoFormateado && (
-                <div className="flex items-baseline justify-between gap-4 border-t border-[rgba(26,24,24,0.1)] pt-3">
-                  <dt className="font-['Inter'] text-sm text-[#5a5856]">Saldo pendiente</dt>
-                  <dd className="m-0 font-['Inter'] text-sm text-[#1a1818]">{saldoFormateado}</dd>
-                </div>
-              )}
-            </dl>
-            {!precioFormateado && (
-              <p className="t-body mb-0 mt-3 text-[0.75rem]!">El precio de este paquete se confirmará con el estudio.</p>
-            )}
-            {!adelantoFormateado && (
-              <p className="t-body mb-0 mt-1 text-[0.75rem]!">El importe del adelanto y el saldo pendiente se mostrarán cuando el estudio los configure.</p>
-            )}
-          </section>
-
-          <section aria-labelledby="pago-metodo-titulo">
-            <label id="pago-metodo-titulo" htmlFor="pago-metodo" className="t-label mb-3 block">Método de pago</label>
-            <select
-              id="pago-metodo"
-              name="metodoPago"
-              defaultValue="LINEA"
-              disabled
-              aria-describedby={pagoEnLineaDisponible ? undefined : "pago-no-disponible"}
-              className="w-full border border-[rgba(26,24,24,0.2)] bg-white/60 px-3 py-3 font-['Inter'] text-sm text-[#5a5856] disabled:cursor-not-allowed"
-            >
-              <option value="LINEA">Pago en línea (no disponible)</option>
-            </select>
-            <p className="t-body mb-0 mt-2 text-[0.75rem]!">No se solicitan ni almacenan datos de tarjeta en este formulario.</p>
-          </section>
-
-          {!pagoEnLineaDisponible && (
-            <p id="pago-no-disponible" aria-live="polite" className="m-0 border border-[#dedad4] bg-[#f1efeb] p-4 font-['Inter'] text-sm leading-6 text-[#5a5856]" role="status">
-              <strong className="block text-[#1a1818]">Pago en línea aún no disponible.</strong>
-              No se realizará ningún cargo ni se solicitan datos de tarjeta. Puedes cancelar y enviar tu solicitud sin pagar; el estudio coordinará el adelanto contigo.
-            </p>
-          )}
-
-          {aviso && (
-            <p aria-live="assertive" className="m-0 border border-[#e3b8bb] bg-[#fdf4f4] p-4 font-['Inter'] text-sm leading-6 text-[#a51c1c]" role="alert">
-              {aviso}
-            </p>
-          )}
-        </div>
-
-        <footer className="mt-6 flex flex-col-reverse gap-3 border-t border-[rgba(26,24,24,0.12)] pt-5 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="border border-[rgba(26,24,24,0.25)] bg-transparent px-5 py-3 font-['Inter'] text-[0.7rem] font-semibold tracking-[0.2em] uppercase text-[#1a1818] transition-colors hover:border-[#1a1818]"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            aria-describedby={pagoEnLineaDisponible ? undefined : "pago-no-disponible"}
-            className="border border-[#1a1818] bg-[#1a1818] px-5 py-3 font-['Inter'] text-[0.7rem] font-semibold tracking-[0.2em] uppercase text-white transition-colors hover:border-[#a51c1c] hover:bg-[#a51c1c]"
-          >
-            Continuar
-          </button>
-        </footer>
-        </form>
-      </section>
-    </div>,
-    document.body,
-  );
-}
-
 export default function Contacto() {
   const [searchParams, setSearchParams] = useSearchParams();
   const paqueteCampaniaId = searchParams.get("paqueteId");
@@ -269,7 +59,6 @@ export default function Contacto() {
   const [sent, setSent] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
-  const [pagoAbierto, setPagoAbierto] = useState(false);
   const formRef = useRef(null);
   const enviandoRef = useRef(false);
 
@@ -307,17 +96,6 @@ export default function Contacto() {
     return () => controller.abort();
   }, [categoriaReserva, paqueteCampaniaId]);
 
-  const opcionSeleccionada = categoriaReserva
-    ? opcionesPaquete.find((opcion) =>
-        categoriaReserva.id === "MEMBRESIAS" ? opcion.nombre === form.paquete : String(opcion.id) === form.paqueteId,
-      )
-    : null;
-  // Campos opcionales que el backend puede incluir cuando exista configuración de pagos.
-  const precioPaquete = numeroOpcional(opcionSeleccionada?.precio);
-  const adelanto = numeroOpcional(opcionSeleccionada?.adelanto);
-  const saldoConfigurado = numeroOpcional(opcionSeleccionada?.saldoPendiente);
-  const saldo = saldoConfigurado ?? (precioPaquete !== null && adelanto !== null ? precioPaquete - adelanto : null);
-
   const validarReserva = () => {
     if (!categoriaReserva) return "Selecciona una categoría para reservar.";
     if (!form.nombre.trim()) return "Escribe tu nombre completo.";
@@ -330,19 +108,6 @@ export default function Contacto() {
       return "Describe qué necesitas para la cotización personalizada.";
     }
     return "";
-  };
-
-  const handlePagar = () => {
-    if (enviandoRef.current) return;
-    const validacion = validarReserva();
-    if (validacion) {
-      setErrorEnvio(validacion);
-      formRef.current?.reportValidity();
-      return;
-    }
-    formRef.current?.reportValidity();
-    setErrorEnvio("");
-    setPagoAbierto(true);
   };
 
   const handleSubmit = async (e) => {
@@ -639,26 +404,15 @@ export default function Contacto() {
 
                     <div className="pt-2">
                       {errorEnvio && <p className="mb-4 text-sm text-[#a51c1c]" role="alert">{errorEnvio}</p>}
-                      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
-                        <button
-                          type="submit"
-                          className="btn-ghost disabled:cursor-not-allowed disabled:opacity-45"
-                          disabled={enviando || cargandoOpciones}
-                        >
-                          {enviando ? "Enviando..." : "Enviar solicitud"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handlePagar}
-                          className="inline-flex items-center justify-center border border-[#1a1818] px-4 py-3 font-['Inter'] text-[0.7rem] font-semibold tracking-[0.2em] uppercase text-[#1a1818] transition-colors duration-200 hover:border-[#a51c1c] hover:bg-[#1a1818] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
-                          disabled={enviando || cargandoOpciones}
-                        >
-                          Pagar por adelantado
-                        </button>
-                      </div>
-
-                      <p className="t-body text-[0.7rem]! mt-4 text-[#aaa8a4]!">
-                        Respondemos en menos de 24 horas. El pago es opcional.
+                      <button
+                        type="submit"
+                        className="btn-ghost disabled:cursor-not-allowed disabled:opacity-45"
+                        disabled={enviando || cargandoOpciones}
+                      >
+                        {enviando ? "Enviando..." : "Enviar solicitud"}
+                      </button>
+                      <p className="t-body mt-4 text-[0.7rem]! text-[#aaa8a4]!">
+                        Respondemos en menos de 24 horas.
                       </p>
                     </div>
                   </form>
@@ -704,17 +458,6 @@ export default function Contacto() {
           </div>
         </section>
       </div>
-      {pagoAbierto && (
-        <PagoAdelantadoModal
-          datos={form}
-          categoria={categoriaReserva}
-          paquete={form.paquete}
-          precio={precioPaquete}
-          adelanto={adelanto}
-          saldo={saldo}
-          onClose={() => setPagoAbierto(false)}
-        />
-      )}
     </Layout>
   );
 }
