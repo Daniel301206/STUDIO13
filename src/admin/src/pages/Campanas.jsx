@@ -194,8 +194,8 @@ export default function Campanas() {
   };
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-350 px-5 py-8 sm:px-7 md:px-10 md:py-10 xl:px-12">
-      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+    <main className="campanas-pagina mx-auto min-h-screen w-full max-w-350 px-5 py-8 sm:px-7 md:px-10 md:py-10 xl:px-12 max-md:flex max-md:h-full max-md:min-h-0 max-md:flex-col max-md:overflow-hidden">
+      <div className="mb-7 flex max-md:shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-2 text-[10px] font-semibold! tracking-[.2em] text-neutral-500 uppercase sm:text-xs">Administración</p>
           <h1 className="m-0 font-[Georgia] text-3xl font-normal! text-neutral-900 sm:text-4xl">Campañas</h1>
@@ -207,11 +207,12 @@ export default function Campanas() {
         </div>
       </div>
 
-      {mensajeExito && <p className="mb-4 text-sm text-neutral-800" role="status">{mensajeExito}</p>}
-      {errorOperacion && !modalAbierto && <p className="mb-4 text-sm text-[#a51c1c]" role="alert">{errorOperacion}</p>}
-      {errorPaquetes && <p className="mb-4 text-sm text-[#a51c1c]" role="alert">{errorPaquetes}</p>}
-      {!errorPaquetes && !paquetes.some((paquete) => paquete.seccion === "CAMPANIA" && paquete.activo) && <p className="mb-4 border border-neutral-200 bg-white p-4 text-sm text-neutral-600">Primero publica un paquete en Paquetes → Campañas para poder asociarlo a un anuncio.</p>}
+      {mensajeExito && <p className="mb-4 max-md:shrink-0 text-sm text-neutral-800" role="status">{mensajeExito}</p>}
+      {errorOperacion && !modalAbierto && <p className="mb-4 max-md:shrink-0 text-sm text-[#a51c1c]" role="alert">{errorOperacion}</p>}
+      {errorPaquetes && <p className="mb-4 max-md:shrink-0 text-sm text-[#a51c1c]" role="alert">{errorPaquetes}</p>}
+      {!errorPaquetes && !paquetes.some((paquete) => paquete.seccion === "CAMPANIA" && paquete.activo) && <p className="mb-4 max-md:shrink-0 border border-neutral-200 bg-white p-4 text-sm text-neutral-600">Primero publica un paquete en Paquetes → Campañas para poder asociarlo a un anuncio.</p>}
 
+      <div className="max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto md:contents">
       {error ? <div className="border border-neutral-200 bg-white p-5 text-sm text-[#a51c1c]" role="alert">{error}<button className="ml-3 underline" type="button" onClick={recargar}>Reintentar</button></div>
         : cargando ? <p className="border border-neutral-200 bg-white p-8 text-sm text-neutral-500">Cargando campañas…</p>
           : filas.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filas.map((campania) => {
@@ -227,6 +228,7 @@ export default function Campanas() {
             </article>;
           })}</div>
           : <div className="border border-neutral-200 bg-white px-6 py-12 text-center"><h2 className="mb-2 font-[Georgia] text-xl font-normal! text-neutral-900">Todavía no hay campañas</h2><p className="mb-5 text-sm text-neutral-500">Crea una campaña para mostrar una promoción de temporada en Inicio.</p><button type="button" disabled={!paquetesCampania.length} onClick={abrirNueva} className="border border-[#a51c1c] bg-[#a51c1c] px-4 py-2.5 text-xs font-semibold! text-white disabled:opacity-50">Nueva campaña</button></div>}
+      </div>
 
       {modalAbierto && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 p-3 sm:p-4" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) limpiarModal(); }}><section role="dialog" aria-modal="true" aria-labelledby="campania-modal-titulo" className="my-auto max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-neutral-300 bg-white p-5 shadow-2xl sm:p-7">
         <p className="mb-2 text-[10px] font-semibold! tracking-[.2em] text-[#a51c1c] uppercase">Promoción de temporada</p><h2 id="campania-modal-titulo" className="mb-5 font-[Georgia] text-2xl font-normal! text-neutral-900">{campaniaEditando ? "Editar campaña" : "Nueva campaña"}</h2>

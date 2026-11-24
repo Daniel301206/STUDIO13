@@ -151,6 +151,50 @@ blockquote:not([class*="Fraunces"]),
 .galeria-gestion-lista::-webkit-scrollbar-thumb { border: 2px solid #ecebe9; border-radius: 999px; background: #8a8682; }
 .galeria-gestion-lista::-webkit-scrollbar-thumb:hover { background: #55524f; }
 
+@media (max-width: 767px) {
+  .studio13-admin-shell:has(.paquetes-pagina) {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .studio13-admin-body:has(.paquetes-pagina) {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .studio13-admin-content:has(.paquetes-pagina) {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  body:has(.paquetes-pagina) { overflow: hidden; }
+}
+
+@media (max-width: 767px) {
+  .studio13-admin-shell:has(.campanas-pagina) {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .studio13-admin-body:has(.campanas-pagina) {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .studio13-admin-content:has(.campanas-pagina) {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  body:has(.campanas-pagina) { overflow: hidden; }
+}
+
 /* El listado de anuncios de otras pantallas conserva su barra delgada original. */
 .galeria-imagenes-scroll {
   scrollbar-width: thin;

@@ -161,8 +161,8 @@ function Inicio() {
 
   return (
     <div className="min-h-screen bg-[#f5f4f2] text-[#171717]">
-      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-neutral-200 bg-white/95 px-5 backdrop-blur sm:px-7 md:h-18 md:px-10">
-        <div className="flex items-center gap-3 text-xs text-neutral-500 sm:text-sm">
+      <header className="fixed inset-x-0 top-0 z-10 flex h-16 items-center justify-between border-b border-neutral-200 bg-white/95 px-4 backdrop-blur md:sticky md:px-10 md:h-18">
+        <div className="flex min-w-0 items-center gap-3 text-xs text-neutral-500 sm:text-sm">
           <button
             className="mr-1 inline-flex border-0 bg-transparent p-1.5 text-neutral-800 md:hidden"
             type="button"
@@ -175,10 +175,10 @@ function Inicio() {
           <span className="text-neutral-300">/</span>
           <span className="text-neutral-800">Inicio</span>
         </div>
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           <span className="flex items-center gap-2 text-[10px] text-neutral-500 sm:text-xs">
             <i className="h-2 w-2 rounded-full bg-[#b51f2a]" />
-            Sesión activa
+            <span className="max-[360px]:hidden">Sesión activa</span>
           </span>
           <span className="hidden h-5 w-px bg-neutral-200 sm:block" />
           <span className="grid h-9 w-9 place-items-center rounded-full bg-[#111] text-sm font-semibold! text-white sm:h-10 sm:w-10">
@@ -193,9 +193,9 @@ function Inicio() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-350 px-5 py-8 sm:px-7 md:px-10 md:py-10 xl:px-12">
-        <div className="mb-7 flex items-end justify-between gap-5 sm:mb-8">
-          <div>
+      <main className="mx-auto flex w-full max-w-350 flex-col gap-5 px-4 pt-24 pb-8 md:gap-0 md:px-10 md:py-10 xl:px-12">
+        <div className="mb-0 flex min-w-0 flex-col items-start justify-between gap-5 md:mb-8 md:flex-row md:items-end md:gap-5">
+          <div className="min-w-0">
             <p className="mb-2 flex items-center gap-2.5 text-[10px] font-semibold! tracking-[.2em] text-neutral-500 uppercase sm:text-xs">
               Panel de control
               <span className="h-px w-3.5 bg-[#b51f2a]" />
@@ -207,16 +207,51 @@ function Inicio() {
               Una mirada clara al día a día de tu estudio fotográfico.
             </p>
           </div>
-          <p className="mb-1 hidden text-xs text-neutral-500 capitalize md:block lg:text-sm">
+          <p className="mb-1 text-xs text-neutral-500 capitalize lg:text-sm">
             {fechaHoy}
           </p>
         </div>
 
+        <section className="mt-0 min-w-0 md:mt-10" aria-label="Resumen del estudio">
+          <div className="mb-4">
+            <p className="mb-1.5 text-[10px] font-semibold! tracking-[.2em] text-neutral-500 uppercase sm:text-xs">
+              En cifras
+            </p>
+            <h2 className="m-0 font-[Georgia] text-xl font-normal! text-neutral-900 sm:text-2xl">
+              Resumen del estudio
+            </h2>
+          </div>
+          <div className="grid! grid-cols-2! auto-rows-fr gap-2.5 border border-neutral-200 bg-white md:auto-rows-auto md:grid-cols-2! md:gap-0 lg:grid-cols-4!">
+            {estadisticas.map((estadistica, index) => (
+              <article
+                className={`flex min-h-28 min-w-0 flex-col border-b border-r border-neutral-200 px-4 py-4 md:block sm:min-h-32 sm:px-5 sm:py-5 ${index % 2 === 1 ? "sm:border-r-0 lg:border-r" : ""} ${index === estadisticas.length - 1 ? "border-r-0 lg:border-r-0" : ""}`}
+                key={estadistica.key}
+              >
+                <div className="mb-3 flex items-center justify-between text-[10px] text-neutral-400 sm:mb-4">
+                  <span className="h-px w-5 bg-[#b51f2a]" />
+                  <span>0{index + 1}</span>
+                </div>
+                <strong className="order-2 block font-[Georgia] text-3xl font-normal! leading-none text-neutral-900 md:order-0 sm:text-4xl">
+                  {cargando ? "—" : (datos[estadistica.key]?.length ?? "—")}
+                </strong>
+                <span className="order-1 mt-2 block text-xs font-semibold! text-neutral-800 md:order-0 sm:text-sm">
+                  {estadistica.label}
+                </span>
+                <span className="order-3 mt-1.5 block text-[10px] leading-snug text-neutral-400 md:order-0 sm:text-xs">
+                  {estadistica.key === "reservaciones" && pendientes !== undefined
+                    ? `${pendientes} pendientes`
+                    : estadistica.note}
+                </span>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section
-          className="grid min-h-64 overflow-hidden bg-[#101010] text-white sm:min-h-72 md:grid-cols-[1.1fr_.9fr] md:gap-8 lg:min-h-80"
+          className="mt-0! grid min-h-64 min-w-0 grid-cols-1 overflow-hidden bg-[#101010] text-white sm:min-h-72 md:mt-0! md:grid-cols-[1.1fr_.9fr] md:gap-8 lg:min-h-80"
           aria-label="Studio13 fotografía"
         >
-          <div className="flex max-w-155 flex-col justify-center px-7 py-9 sm:px-9 md:px-10 lg:px-12">
+          <div className="flex min-w-0 max-w-155 flex-col justify-center px-7 py-9 sm:px-9 md:px-10 lg:px-12">
             <p className="mb-4 text-[10px] font-semibold! tracking-[.2em] text-neutral-300 uppercase sm:text-xs">
               Studio13 <span className="px-1 text-[#c51f2d]">—</span>
               Fotografía profesional
@@ -231,62 +266,27 @@ function Inicio() {
             </p>
             <a
               href="/admin/Galeria"
-              className="group inline-flex w-full cursor-pointer items-center justify-center gap-2.5 bg-[#b51f2a] px-8 py-4 text-[10px] font-semibold! tracking-[.2em] text-white no-underline uppercase transition-colors duration-200 hover:bg-[#921823] md:w-fit sm:text-xs"
+              className="group inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2.5 bg-[#b51f2a] px-8 py-4 text-[10px] font-semibold! tracking-[.2em] text-white no-underline uppercase transition-colors duration-200 hover:bg-[#921823] md:w-fit sm:text-xs"
             >
               Ver galería <span className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true">→</span>
             </a>
           </div>
-          <div className="portada-collage relative min-h-64 overflow-visible p-4 sm:p-5 md:min-h-[320px]">
-            <div className="relative h-full min-h-56 overflow-hidden rounded-[3px] border border-[#b51f2a] shadow-[0_10px_30px_rgba(0,0,0,.5)] md:min-h-[280px]">
+          <div className="portada-collage relative min-h-64 min-w-0 overflow-visible p-4 sm:p-5 md:min-h-80">
+            <div className="relative h-full min-h-56 min-w-0 overflow-hidden rounded-[3px] border border-[#b51f2a] shadow-[0_10px_30px_rgba(0,0,0,.5)] md:min-h-70">
               <img
-                className="h-full w-full object-cover opacity-80"
+                className="h-full w-full max-w-full object-cover opacity-80"
                 src={portada}
                 alt="Fotografía de portada de Studio13"
                 loading="lazy"
               />
             </div>
-            <img className="portada-collage__foto portada-collage__foto--empresarial" src={portada2} alt="Retrato empresarial de Studio13" loading="lazy" />
-            <img className="portada-collage__foto portada-collage__foto--familiar" src={portada3} alt="Fotografía de una familia" loading="lazy" />
-            <img className="portada-collage__foto portada-collage__foto--exteriores" src={portada} alt="Atardecer sobre el río con una mujer en un bote" loading="lazy" />
+            <img className="portada-collage__foto portada-collage__foto--empresarial max-w-full" src={portada2} alt="Retrato empresarial de Studio13" loading="lazy" />
+            <img className="portada-collage__foto portada-collage__foto--familiar max-w-full" src={portada3} alt="Fotografía de una familia" loading="lazy" />
+            <img className="portada-collage__foto portada-collage__foto--exteriores max-w-full" src={portada} alt="Atardecer sobre el río con una mujer en un bote" loading="lazy" />
           </div>
         </section>
 
-        <section className="mt-8 sm:mt-10" aria-label="Resumen del estudio">
-          <div className="mb-4">
-            <p className="mb-1.5 text-[10px] font-semibold! tracking-[.2em] text-neutral-500 uppercase sm:text-xs">
-              En cifras
-            </p>
-            <h2 className="m-0 font-[Georgia] text-xl font-normal! text-neutral-900 sm:text-2xl">
-              Resumen del estudio
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 border border-neutral-200 bg-white sm:grid-cols-2 lg:grid-cols-4">
-            {estadisticas.map((estadistica, index) => (
-              <article
-                className={`min-h-28 border-b border-r border-neutral-200 px-4 py-4 sm:min-h-32 sm:px-5 sm:py-5 ${index % 2 === 1 ? "sm:border-r-0 lg:border-r" : ""} ${index === estadisticas.length - 1 ? "border-r-0 lg:border-r-0" : ""}`}
-                key={estadistica.key}
-              >
-                <div className="mb-3 flex items-center justify-between text-[10px] text-neutral-400 sm:mb-4">
-                  <span className="h-px w-5 bg-[#b51f2a]" />
-                  <span>0{index + 1}</span>
-                </div>
-                <strong className="block font-[Georgia] text-3xl font-normal! leading-none text-neutral-900 sm:text-4xl">
-                  {cargando ? "—" : (datos[estadistica.key]?.length ?? "—")}
-                </strong>
-                <span className="mt-2 block text-xs font-semibold! text-neutral-800 sm:text-sm">
-                  {estadistica.label}
-                </span>
-                <span className="mt-1.5 block text-[10px] leading-snug text-neutral-400 sm:text-xs">
-                  {estadistica.key === "reservaciones" && pendientes !== undefined
-                    ? `${pendientes} pendientes`
-                    : estadistica.note}
-                </span>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <div className="mt-8 grid grid-cols-1 gap-9 md:mt-10 md:grid-cols-[1.2fr_.95fr] md:gap-10 xl:gap-14">
+        <div className="mt-0 grid min-w-0 grid-cols-1 gap-5 md:mt-10 md:grid-cols-[1.2fr_.95fr] md:gap-10 xl:gap-14">
           <section className="min-w-0" aria-label="Próximas reservaciones">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
@@ -306,7 +306,7 @@ function Inicio() {
                       <a href={`/admin/Reservaciones?id=${encodeURIComponent(reserva.id)}`} className="grid min-h-20 grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-3 py-3 text-inherit no-underline transition-colors hover:bg-neutral-50 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:gap-4">
                         <span className="grid justify-items-center leading-none">
                           <strong className="font-[Georgia] text-2xl font-normal! text-neutral-900">{fecha?.toLocaleDateString("es", { day: "2-digit" })}</strong>
-                          <span className="mt-1 text-[9px] font-semibold! tracking-[.1em] text-neutral-500 uppercase">{fecha?.toLocaleDateString("es", { month: "short" }).replace(".", "")}</span>
+                          <span className="mt-1 text-[9px] font-semibold! tracking-widest text-neutral-500 uppercase">{fecha?.toLocaleDateString("es", { month: "short" }).replace(".", "")}</span>
                         </span>
                         <span className="grid min-w-0 gap-1">
                           <span className="flex flex-wrap items-center gap-2">
@@ -346,7 +346,7 @@ function Inicio() {
                   return (
                     <a href="/admin/Galeria" key={imagen?.id || `placeholder-${indice}`} aria-label={imagen ? `Ver ${imagen.titulo} en Galería` : `Subir Foto ${indice + 1} a Galería`} className="group relative block aspect-square overflow-hidden bg-[#111] text-inherit no-underline">
                       {mostrarImagen ? (
-                        <img className="h-full w-full object-cover object-top transition-transform duration-200 group-hover:scale-[1.03]" src={imagen.url} alt={imagen.titulo} loading="lazy" onError={() => setImagenesRota((actual) => ({ ...actual, [imagen.id]: true }))} />
+                        <img className="h-full w-full max-w-full object-cover object-top transition-transform duration-200 group-hover:scale-[1.03]" src={imagen.url} alt={imagen.titulo} loading="lazy" onError={() => setImagenesRota((actual) => ({ ...actual, [imagen.id]: true }))} />
                       ) : (
                         <span className="flex h-full w-full flex-col items-center justify-center gap-2 text-neutral-500">
                           <Icono name="image" size={20} />

@@ -17,23 +17,23 @@ const mostrarPrecio = (valor) => valor == null || valor === ""? "Precio por defi
 const faqs = [
   {
     q: "¿Cómo reservo?",
-    a: "Un abono del 50% confirma la fecha. El saldo se cancela el día de la sesión.",
+    a: "Completa el formulario de contacto o escríbenos por WhatsApp. Nos pondremos en contacto contigo para consultar la disponibilidad y coordinar tu reserva.",
   },
   {
     q: "¿Puedo cambiar la fecha?",
-    a: "Sí, con 48 horas mínimo de anticipación sin costo adicional.",
+    a: "Sí, puedes solicitar un cambio con al menos 48 horas de anticipación, sin costo adicional. La nueva fecha estará sujeta a disponibilidad.",
   },
   {
     q: "¿En qué formato entregan las fotos?",
-    a: "Alta resolución vía galería digital privada. Aptas para cualquier tamaño de impresión.",
+    a: "Recibirás tus fotografías editadas en formato digital y en alta resolución, mediante una galería privada para descargarlas.",
   },
   {
     q: "¿Puedo agregar fotos al paquete?",
-    a: "Sí — ₡2,000 por foto editada adicional, pagada el mismo día.",
+    a: "Sí, puedes adquirir fotografías editadas adicionales. Consúltanos el precio por foto y las opciones disponibles para tu paquete.",
   },
   {
     q: "¿Cuánto tarda la entrega?",
-    a: "Básico 5–7 días · Estándar 7 · Premium 10 · Elite 15 días hábiles.",
+    a: "El tiempo de entrega varía según el servicio contratado. Te confirmaremos el plazo al coordinar tu reserva.",
   },
 ];
 
@@ -433,10 +433,6 @@ export default function Paquetes() {
             </CatalogoHorizontal>
             )}
 
-            <p className="t-body text-[0.72rem] mt-5 text-[#aaa8a4] italic">
-              * Precios en colones costarricenses. Sujetos a cambio. Contáctanos
-              para una cotización exacta.
-            </p>
           </div>
         </section>}
 

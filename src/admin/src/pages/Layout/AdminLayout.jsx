@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import logoBlanco from "../../assets/Studio13_blanco.png";
+import logoNegro from "../../assets/studio13_negro.PNG";
 import { ADMIN_ROLES } from "../../auth/adminRoles.js";
 
 const MenuContext = createContext(null);
@@ -153,7 +154,7 @@ function AdminLayout({ children }) {
             >
               <Icono name="menu" size={20} />
             </button>
-            <span><strong>Studio13</strong><small>Administración</small></span>
+            <span><img src={logoNegro} alt="Studio13" className="h-7 w-auto object-contain" /><small>Administración</small></span>
           </header>
           <div className="studio13-admin-content">
             {children ?? <Outlet />}
